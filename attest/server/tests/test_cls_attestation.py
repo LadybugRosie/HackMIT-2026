@@ -90,3 +90,36 @@ def test_unsigned_submission_stays_l1(capp):
                   json={"session_id": led["session_id"], "text": text})
     assert r.status_code == 200 and r.json()["certificate"]["assurance_level"] == "L1"
     assert r.json()["certificate"]["claims"]["attestation"]["device_checkpoints"] == 0
+
+
+def test_hid_witness_in_classroom_owner_only(capp):
+    from fake_hid import FakeHelper
+    from test_hid import kd_ts, typed_with_kd
+    capp.app.state.attest_settings.TSA_URL = ""
+    t, a, ana, ben = _setup(capp)
+    sub, led = _draft(capp, ana["token"], a["assignment_id"])
+    sid = led["session_id"]
+    device, helper = FakeAuthenticator(RP, ORIGIN), FakeHelper()
+
+    def challenge(token):
+        return b64url_decode(capp.get(f"/v1/session/{sid}/enroll/options", headers=auth(token)).json()["challenge"])
+
+    assert capp.post(f"/v1/session/{sid}/enroll-hid", json=helper.enroll_payload(os.urandom(32)), headers=auth(ben["token"])).status_code == 404
+    assert capp.post(f"/v1/session/{sid}/enroll", json=device.create(challenge(ana["token"])), headers=auth(ana["token"])).status_code == 201
+    assert capp.post(f"/v1/session/{sid}/enroll-hid", json=helper.enroll_payload(challenge(ana["token"])), headers=auth(ana["token"])).status_code == 201
+
+    text = "Every one of these keystrokes was seen by the keyboard driver."
+    events = build_chain(led["genesis"], typed_with_kd(text))
+    capp.post("/v1/ingest", headers=auth(ana["token"]), json={"session_id": sid, "events": events,
+                                                             "content_sha256": sha256_hex(text), "content_len": len(text)})
+    root = events[-1]["hash"]
+    sts = helper.witness(sid, led["genesis"], root, kd_ts(events))
+    assert capp.post(f"/v1/session/{sid}/attest-hid", json={"key_id": helper.key_id, "statements": sts},
+                     headers=auth(t["token"])).status_code == 404  # teacher cannot witness for a student
+    r = capp.post(f"/v1/session/{sid}/attest-hid", json={"key_id": helper.key_id, "statements": sts}, headers=auth(ana["token"]))
+    assert r.status_code == 200 and r.json()["final"], r.text
+    capp.post(f"/v1/session/{sid}/attest", json={"head": root, **device.get(bytes.fromhex(root))}, headers=auth(ana["token"]))
+    r = capp.post(f"/api/submissions/{sub['submission_id']}/submit", headers=auth(ana["token"]), json={"session_id": sid, "text": text})
+    assert r.status_code == 200 and r.json()["certificate"]["assurance_level"] == "L3", r.text
+    v = capp.post(f"/api/review/submissions/{sub['submission_id']}/verify", headers=auth(t["token"])).json()
+    assert v["ok"] and v["assurance_level"] == "L3" and any(c["name"] == "hid_correlation" and c["ok"] for c in v["checks"])

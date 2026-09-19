@@ -136,9 +136,63 @@ class EnrollRequest(BaseModel):
 class CredentialView(BaseModel):
     credential_id: str
     created_ms: int
+    type: str = "webauthn"  # webauthn | hid
     aaguid: str = ""
     label: Optional[str] = None
     uv_at_enroll: bool = False
+
+
+class EnrollHidRequest(BaseModel):
+    """The native witness helper's Secure Enclave key, vouched for by the owner's authenticated
+    session: `signature` is ECDSA-P256 (DER, base64url) over the enrollment challenge bytes."""
+    public_key: str = Field(pattern=r"^04[0-9a-f]{128}$", description="uncompressed P-256 point, hex")
+    key_id: str = Field(min_length=8, max_length=64)
+    cdhash: str = Field(min_length=8, max_length=128)
+    key_backend: str = "secure_enclave"  # secure_enclave | software
+    signature: str
+    helper_version: Optional[str] = None
+
+
+class HidDevice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    kd: int = Field(ge=0)
+    builtin: bool = False
+
+
+class HidStatement(BaseModel):
+    """One witnessed window. Field names are short because they are hashed verbatim (see attestors/hid.py)."""
+    model_config = ConfigDict(extra="forbid")
+    v: int = 1
+    sid: str
+    seg: int = Field(ge=0)
+    seq: int = Field(ge=0)
+    t0: int = Field(ge=0)
+    t1: int = Field(ge=0)
+    kd: int = Field(ge=0)
+    devices: List[HidDevice] = Field(default_factory=list)
+    idle_ms: int = Field(ge=0)
+    cdhash: str
+    anchor: Optional[Dict[str, str]] = None
+    final: bool = False
+    prev: str = Hex64
+    hash: str = Hex64
+    sig: str
+
+
+class AttestHidRequest(BaseModel):
+    key_id: str
+    statements: List[HidStatement] = Field(min_length=1, max_length=2000)
+
+
+class AttestHidResponse(BaseModel):
+    session_id: str
+    accepted: int
+    seg: int
+    seq_to: int
+    final: bool
+    hid: Dict[str, Any] = Field(default_factory=dict)
+    level_if_sealed_now: str
 
 
 class AttestRequest(BaseModel):

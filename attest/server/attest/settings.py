@@ -21,5 +21,8 @@ class Settings(BaseSettings):
     TSA_TIMEOUT_S: float = 8.0
     TSA_TRUSTED_FINGERPRINTS: List[str] = []   # extra TSA signer-cert SHA-256s beyond the built-in list
 
+    # Stage 4 (L3): hardware witness helper (native/attest-hid)
+    HID_TRUSTED_CDHASHES: List[str] = []       # code-directory hashes of accepted helper builds; empty = accept any, flag unverified
+
 
 settings = Settings()

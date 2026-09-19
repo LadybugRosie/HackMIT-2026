@@ -14,7 +14,9 @@ def finalize(session_id: str, payload: FinalizeRequest, request: Request) -> Cer
         raise HTTPException(404, "unknown session")
     if rec.certificate is not None:
         return Certificate(**rec.certificate)
-    cert, reason = build_certificate(rec, payload.final_text, getattr(request.app.state, 'attestors', None))
+    cfg = getattr(request.app.state, 'attest_settings', None)
+    cert, reason = build_certificate(rec, payload.final_text, getattr(request.app.state, 'attestors', None),
+                                     cfg.HID_TRUSTED_CDHASHES if cfg else ())
     if cert is None:
         raise HTTPException(409, {"code": "not_bound", "detail": reason})
     store.set_certificate(session_id, cert.model_dump())

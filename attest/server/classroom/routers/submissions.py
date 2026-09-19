@@ -102,7 +102,8 @@ def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTas
         raise HTTPException(409, {"code": "wrong_session", "detail": "session is not the ledger bound to this submission"})
 
     if rec.certificate is None:
-        cert, reason = build_certificate(rec, payload.text, request.app.state.attestors)
+        cert, reason = build_certificate(rec, payload.text, request.app.state.attestors,
+                                         request.app.state.attest_settings.HID_TRUSTED_CDHASHES)
         if cert is None:
             raise HTTPException(409, {"code": "not_bound", "detail": reason})
         cert_dict = cert.model_dump()

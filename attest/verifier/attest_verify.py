@@ -88,6 +88,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("certificate")
     ap.add_argument("document")
     ap.add_argument("--events", help="ledger export JSON ({genesis, events}) for full re-derivation")
+    ap.add_argument("--trust-helper", action="append", metavar="CDHASH",
+                    help="accept hardware-witness statements only from this helper build (repeatable); default: accept any, flag unverified")
     args = ap.parse_args(argv)
 
     cert = json.load(open(args.certificate, encoding="utf-8"))
@@ -101,6 +103,7 @@ def main(argv: Optional[List[str]] = None) -> int:
           "submitted text matches certificate", "submitted text does NOT match certificate hash")
     check("doc_len", len(text) == cert["doc_len"], f"{len(text)} chars", f"{len(text)} chars vs {cert['doc_len']} certified")
 
+    events: List[Dict[str, Any]] = []
     if args.events:
         ledger = json.load(open(args.events, encoding="utf-8"))
         events = ledger["events"]
@@ -126,16 +129,30 @@ def main(argv: Optional[List[str]] = None) -> int:
             heads = None
             if args.events:
                 heads = {cert["genesis"], *(e["hash"] for e in events)}
-            level, results, summary = assess_attestations(attestations, offline_attestors(), cert["chain_root"], heads)
+            level, results, summary = assess_attestations(attestations, offline_attestors(), cert["chain_root"], heads,
+                                                          events=events if args.events else None,
+                                                          trusted_cdhashes=args.trust_helper or ())
             for n, (att, res) in enumerate(zip(attestations, results)):
+                if att.get("kind") == "hid":
+                    check(f"hid[{n}]", res.ok, res.detail, res.detail)
+                    continue
                 tag = "final" if att.get("head") == cert["chain_root"] else "checkpoint"
                 check(f"{res.kind}[{n}]", res.ok, f"{tag} {str(att.get('head'))[:12]}… — {res.detail}",
                       f"{tag} {str(att.get('head'))[:12]}… — {res.detail}")
+            for c in summary.get("hid_checks", []):
+                check(c["name"], c["ok"], c["detail"], c["detail"])
             check("assurance_level", level == claimed, f"attestations support {level}",
                   f"attestations support {level}, certificate claims {claimed}")
             if summary["final_head_signed"]:
                 level_note = (f"  (device-signed final head{' with user verification' if summary['uv_at_seal'] else ''}, "
                               f"{summary['device_checkpoints']} checkpoint(s), {summary['timestamps']} trusted timestamp(s))")
+            hid = summary.get("hid")
+            if hid:
+                trusted = {True: "pinned helper", False: "UNPINNED helper", None: "helper not pinned (software witness)"}[hid["helper_trusted"]]
+                devs = ", ".join(f"{d['id']}{' built-in' if d['builtin'] else ''} {d['share']:.0%}" for d in hid["devices"])
+                level_note += (f"\n  hardware witness: {hid['windows']} window(s), coverage {hid['coverage_ratio']:.0%}, "
+                               f"editor {hid['ledger_kd']} / hardware {hid['hw_kd']} key-downs, {len(hid['injection_windows'])} injection window(s); "
+                               f"{trusted}; devices: {devs or 'none'}")
         else:
             check("attestations", False, "", f"{len(attestations)} attestation(s) present but server/attest modules not found — cannot verify above L1")
 
