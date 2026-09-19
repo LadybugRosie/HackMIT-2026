@@ -93,6 +93,23 @@ def guard_session_path(request: Request, user: Optional[dict] = Depends(optional
         raise HTTPException(404, "unknown session")
 
 
+def guard_session_owner(request: Request, user: Optional[dict] = Depends(optional_user)) -> None:
+    """Device enrolment and head signing on a bound session: the owning student only, while the
+    draft is open. Teachers can *read* everything else about a session but never sign for it."""
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return
+    bound = submission_for_session(request.app.state.db, session_id)
+    if bound is None:
+        return
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    if bound["student_id"] != user["user_id"]:
+        raise HTTPException(404, "unknown session")
+    if bound["status"] != "draft" and request.method != "GET":
+        raise HTTPException(409, {"code": "not_draft", "detail": "submission is no longer editable"})
+
+
 async def guard_ingest_body(request: Request, user: Optional[dict] = Depends(optional_user)) -> None:
     """Only the owning student may append to a bound ledger, and only while the draft is open."""
     try:

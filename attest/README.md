@@ -24,8 +24,8 @@ questions that usually get conflated:
 |---|---|
 | **L0** | Ledger chain is internally valid |
 | **L1** | + certificate binds the ledger to the submitted text (replay reproduces it) — *Stage 1* |
-| **L2** | + chain heads signed by a device-bound key at checkpoints, trusted timestamp — *Stage 3* |
-| **L3** | + keystrokes attested as hardware-originated by a Secure-Enclave-signed HID helper — *Stage 4* |
+| **L2** | + the final chain head signed by a key that cannot leave the student's device (Secure Enclave / WebAuthn), with RFC 3161 trusted timestamps at checkpoints — *Stage 3, built* |
+| **L3** | + keystrokes attested as hardware-originated by a Secure-Enclave-signed HID helper — *Stage 4, not built* |
 
 `unknown`/`could not check` always means *not verified*, never *clean*.
 
@@ -66,6 +66,48 @@ and warnings are phrased neutrally. Results ride along on every `/v1/ingest` res
 are embedded in the certificate's `claims.integrity`. Set `ATTEST_STORE=sqlite` to persist
 sessions across restarts.
 
+## Device binding and trusted time (Stage 3 — L2)
+
+L1 proves the ledger is internally consistent and produces the text; it cannot tell a real
+session from a script that emitted realistic-looking JSON. L2 reaches outside the JSON with two
+signatures over the **same chain head**:
+
+| Signer | Proves | How |
+|---|---|---|
+| Device key (WebAuthn platform authenticator — the Mac's Secure Enclave) | *which machine*, and at the seal *that the enrolled person was present* (Touch ID) | `navigator.credentials.get` with the chain head as challenge; ECDSA-P256 over `authenticatorData ‖ SHA256(clientDataJSON)` |
+| Timestamp authority (RFC 3161, FreeTSA by default) | *no later than when* — by a clock the student does not control | server POSTs the head to the TSA, verifies the CMS signature against a pinned signer certificate, stores the token |
+
+Flow: enrol once (`/enroll/options` → Touch ID → `/enroll` stores the public key under the
+owner — a user in the classroom, the session in the demo) · every ~3 min the browser signs the
+current head **silently** (`userVerification: discouraged`) · at submit it signs the final head
+**with Touch ID** (`required`) · `build_certificate` verifies every attestation over its own head,
+insists the head is a real state of *this* ledger, and raises the level to L2 **only** for a
+verified device signature over the final chain root. Timestamps enrich but never raise the level
+(they prove *when*, not *who*). Intermediate signatures are reported as checkpoints.
+
+Everything needed to verify is embedded in the certificate (`attestations[]` with the public
+key, the TSA token), and the verification code is standard-library only — a hand-written ECDSA
+(P-256/P-384), DER, CBOR and RSA-PKCS1 in `server/attest/crypto/` — so
+`verifier/attest_verify.py` checks L2 offline with no packages installed:
+
+```
+[PASS] webauthn[0]      final 775b07b77241… — device signature over head … (user verified)
+[PASS] timestamp[1]     final 775b07b77241… — FreeTSA (freetsa.org) at 2026-09-19T22:52:32Z
+[PASS] assurance_level  attestations support L2
+```
+
+A certificate that *claims* L2 without a verifiable signature over its root fails
+`assurance_level`; swapping the embedded key or flipping a signature bit fails `webauthn[n]`.
+Tests drive the whole path with a software authenticator (`tests/fake_authenticator.py`) and a
+captured real FreeTSA token (`tests/fixtures/`). Settings: `ATTEST_WEBAUTHN_RP_ID`,
+`ATTEST_WEBAUTHN_ORIGINS`, `ATTEST_TSA_URL` (empty disables), `ATTEST_TSA_TRUSTED_FINGERPRINTS`.
+
+What L2 does **not** prove: that the keystrokes were physical (a script driving the editor on the
+student's own Mac still passes — that is L3), or that the words are the student's own (signals,
+stylometry). And the certificate itself is not yet signed by the server, so an offline verifier
+trusts the embedded public key because it trusts the certificate's source; an issuer signature is
+the natural next step.
+
 ## The classroom around the engine (`server/classroom/`, `web/src/pages/`)
 
 A sparse teaching platform built *around* attest, in the same server and SQLite file:
@@ -73,8 +115,9 @@ A sparse teaching platform built *around* attest, in the same server and SQLite 
 - **Roles**: students and teachers (email + password; stdlib scrypt, hashed bearer tokens).
 - **Classes & assignments**: 6-letter join codes, assignments with per-check settings.
 - **Attested writing**: the student's editor is bound to one ledger session per submission
-  (`doc_id = submission_id`). Engine routes for bound sessions are guarded (owner writes,
-  teacher reads); the public engine demo at `/attest` stays open.
+  (`doc_id = submission_id`, `owner = user_id`). Engine routes for bound sessions are guarded
+  (owner writes, teacher reads, only the owner enrols keys or signs heads); the public engine
+  demo at `/attest` stays open. A device key enrolled once serves all of a student's assignments.
 - **Submit = the hard guarantee**: the server rebuilds the certificate from *its own* ledger copy
   and refuses unless it replays to exactly the submitted text (`409 not_bound | wrong_session |
   hash_mismatch`). No client claim is stored.
@@ -122,6 +165,8 @@ python3 verifier/attest_verify.py attest-cert.json essay.txt --events attest-led
 
 Everything in this directory was written during HackMIT 2026. Open-source dependencies:
 FastAPI, Uvicorn, Pydantic, pydantic-settings, pytest, Hypothesis, httpx (server);
-Vue 3, Vite, Tiptap v2 / ProseMirror (web). The offline verifier uses only the Python
-standard library. Code under `../prior_work/` is pre-hackathon reference material and is
+Vue 3, Vite, Tiptap v2 / ProseMirror (web); `cryptography` is used **only in tests** as a
+reference implementation to cross-check the hand-written ECDSA. The offline verifier and all
+attestation verification use only the Python standard library. FreeTSA (freetsa.org) is a
+public timestamp service, not code. Code under `../prior_work/` is pre-hackathon reference material and is
 **not** used by this project.

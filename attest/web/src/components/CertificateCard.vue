@@ -12,6 +12,10 @@ const props = defineProps({
 const result = ref(null)
 const busy = ref(false)
 const short = (h) => (h ? `${h.slice(0, 10)}…${h.slice(-8)}` : '—')
+const att = props.certificate.claims?.attestation ?? null
+const LEVEL_TEXT = {
+  L0: 'ledger chain valid', L1: 'ledger bound to this text', L2: 'ledger bound to this text and signed on the student’s device', L3: 'hardware-origin keystrokes',
+}
 
 function download(name, obj) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' })
@@ -30,10 +34,18 @@ async function downloadLedger() {
 
 <template>
   <section class="card cert">
-    <h3>Proof-of-Writing certificate <span class="pill good">{{ certificate.assurance_level }}</span></h3>
+    <h3>Proof-of-Writing certificate <span class="pill" :class="certificate.assurance_level === 'L2' ? 'strong' : 'good'" :title="LEVEL_TEXT[certificate.assurance_level]">{{ certificate.assurance_level }}</span></h3>
     <p class="muted small">
       Binds the submitted text (<span class="mono">{{ short(certificate.doc_sha256) }}</span>) to the ledger that produced it
       (<span class="mono">{{ short(certificate.chain_root) }}</span>, {{ certificate.event_count }} events) · issued {{ fmtDate(certificate.created_ms) }}
+    </p>
+    <p v-if="att" class="small att" :class="att.final_head_signed ? 'good' : 'muted'">
+      <template v-if="att.final_head_signed">
+        Final chain head signed by the student’s enrolled device key{{ att.uv_at_seal ? ' with Touch ID' : '' }} ·
+        {{ att.device_checkpoints }} device checkpoint{{ att.device_checkpoints === 1 ? '' : 's' }}
+        <template v-if="att.timestamps"> · {{ att.timestamps }} trusted timestamp{{ att.timestamps === 1 ? '' : 's' }} ({{ att.first_timestamp?.slice(0, 16).replace('T', ' ') }}–{{ att.last_timestamp?.slice(11, 16) }} UTC)</template>
+      </template>
+      <template v-else>No device signature — the ledger is bound to the text (L1) but not to a particular machine.</template>
     </p>
     <dl>
       <dt>Document hash</dt><dd class="mono">{{ certificate.doc_sha256 }}</dd>
@@ -68,5 +80,7 @@ dt { color: var(--muted); } dd { margin: 0; word-break: break-all; font-size: 11
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .checks { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; font-size: 13px; }
 .checks .summary { margin-top: 6px; font-weight: 600; }
+.pill.strong { color: var(--accent); }
+.att { margin: -4px 0 10px; }
 code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
 </style>

@@ -107,10 +107,64 @@ class SessionView(BaseModel):
     chain_head: str
     replay_mismatches: int
     finalized: bool
+    attestation_count: int = 0
 
 
 class FinalizeRequest(BaseModel):
     final_text: str
+
+
+class EnrollOptions(BaseModel):
+    challenge: str  # base64url
+    rp: Dict[str, str]
+    user: Dict[str, str]
+    pubKeyCredParams: List[Dict[str, Any]]
+    authenticatorSelection: Dict[str, Any]
+    attestation: str = "none"
+    timeout: int = 60_000
+    excludeCredentials: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class EnrollRequest(BaseModel):
+    id: str
+    attestation_object: str
+    client_data_json: str
+    transports: List[str] = Field(default_factory=list)
+    label: Optional[str] = None
+
+
+class CredentialView(BaseModel):
+    credential_id: str
+    created_ms: int
+    aaguid: str = ""
+    label: Optional[str] = None
+    uv_at_enrol: bool = False
+
+
+class AttestRequest(BaseModel):
+    head: str = Hex64
+    credential_id: str
+    authenticator_data: str
+    client_data_json: str
+    signature: str
+
+
+class AttestationResultView(BaseModel):
+    kind: str
+    ok: bool
+    level: str
+    key_id: str = ""
+    detail: str = ""
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AttestResponse(BaseModel):
+    session_id: str
+    head: str
+    at_event_count: int
+    results: List[AttestationResultView]
+    attestation_count: int
+    level_if_sealed_now: str
 
 
 class Certificate(BaseModel):

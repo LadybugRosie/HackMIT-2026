@@ -1,8 +1,10 @@
 import { reactive } from 'vue'
 import { ChainBuilder, sha256Hex } from './chain.js'
+import { enrol as waEnrol, listCredentials, signHead, webauthnAvailable } from './webauthn.js'
 
 const FLUSH_EVERY_EVENTS = 50
 const FLUSH_EVERY_MS = 5000
+const CHECKPOINT_EVERY_MS = 3 * 60_000 // silent device signature over the head every ~3 minutes
 
 /**
  * Owns one ledger session: chains events client-side, batches them, ships to /v1/ingest,
@@ -19,11 +21,16 @@ export class LedgerSync {
     this.queue = []
     this.allEvents = []
     this.timer = null
+    this.ckptTimer = null
     this.resumed = false
+    this.sealing = false
     this.state = reactive({
       sessionId: null, genesis: null, head: null, count: 0, pending: 0,
       replayOk: null, replayLen: 0, error: null, syncing: false, finalized: false,
       certificate: null, verification: null, integrity: null, resumed: false,
+      // Stage 3 (L2): device key + checkpoints
+      webauthn: webauthnAvailable(), credentials: [], enrolling: false, signing: false,
+      checkpoints: [], levelPreview: 'L1', attestError: null,
     })
   }
 
@@ -46,7 +53,8 @@ export class LedgerSync {
 
   stop() {
     clearInterval(this.timer)
-    this.timer = null
+    clearInterval(this.ckptTimer)
+    this.timer = this.ckptTimer = null
     if (this._onBlur) window.removeEventListener('blur', this._onBlur)
     if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload)
   }
@@ -59,6 +67,7 @@ export class LedgerSync {
     this.chain = new ChainBuilder(s.genesis)
     Object.assign(this.state, { sessionId: s.session_id, genesis: s.genesis, head: s.genesis })
     this._arm()
+    this.refreshCredentials()
   }
 
   /** Continue a session the server already holds (bound to a submission). */
@@ -71,10 +80,11 @@ export class LedgerSync {
       sessionId: session_id, genesis, head: chain_head, count: event_count, resumed: true, finalized: !!finalized,
     })
     if (!finalized) this._arm()
+    this.refreshCredentials()
   }
 
   async record(raw) {
-    if (!this.chain || this.state.finalized) return
+    if (!this.chain || this.state.finalized || this.sealing) return
     const ev = await this.chain.append(raw)
     this.queue.push(ev)
     this.allEvents.push(ev)
@@ -119,11 +129,20 @@ export class LedgerSync {
     }
   }
 
-  /** Idempotent: returns the existing certificate if the session was already finalized. */
+  /**
+   * Idempotent: returns the existing certificate if the session was already finalized.
+   * Sealing: stop recording, flush, and — when a device key is enrolled — sign the final head
+   * with user verification (Touch ID) so the certificate can reach L2. If the signature is
+   * declined the session still finalizes, at L1.
+   */
   async finalize() {
     if (this.state.certificate) return this.state.certificate
+    this.sealing = true
     await this.flush()
-    if (this.state.error || this.queue.length) return null
+    if (this.state.error || this.queue.length) { this.sealing = false; return null }
+    if (this.state.credentials.length && this.state.webauthn) {
+      try { await this.checkpoint('required') } catch (e) { this.state.attestError = `seal signature skipped: ${e.message}` }
+    }
     const text = this.getText()
     const r = await this._fetch(`/v1/session/${this.state.sessionId}/finalize`, {
       method: 'POST', body: JSON.stringify({ final_text: text }),
@@ -131,6 +150,7 @@ export class LedgerSync {
     if (!r.ok) {
       const body = await r.json().catch(() => ({}))
       this.state.error = `finalize ${r.status}: ${JSON.stringify(body.detail ?? body)}`
+      this.sealing = false
       return null
     }
     this.state.certificate = await r.json()
@@ -151,5 +171,74 @@ export class LedgerSync {
 
   exportLedger() {
     return { session_id: this.state.sessionId, genesis: this.state.genesis, events: this.allEvents }
+  }
+
+  // -- Stage 3 (L2): device key + checkpoints ---------------------------------------------
+
+  get _sessionPath() { return `/v1/session/${this.state.sessionId}` }
+
+  async refreshCredentials() {
+    if (!this.state.sessionId) return
+    try {
+      this.state.credentials = await listCredentials((p, i) => this._fetch(p, i), this._sessionPath)
+    } catch { this.state.credentials = [] }
+    this._armCheckpoints()
+  }
+
+  _armCheckpoints() {
+    clearInterval(this.ckptTimer)
+    this.ckptTimer = null
+    if (this.state.credentials.length && !this.state.finalized && this.state.webauthn) {
+      this.ckptTimer = setInterval(() => this.checkpoint('discouraged').catch(() => {}), CHECKPOINT_EVERY_MS)
+    }
+  }
+
+  /** Create a device-bound key for this session's owner (Touch ID once). */
+  async enrol(label = null) {
+    this.state.enrolling = true
+    this.state.attestError = null
+    try {
+      const cred = await waEnrol((p, i) => this._fetch(p, i), this._sessionPath, label)
+      this.state.credentials = [...this.state.credentials, cred]
+      this._armCheckpoints()
+      return cred
+    } catch (e) {
+      this.state.attestError = e.name === 'NotAllowedError' ? 'Enrolment cancelled' : e.message
+      throw e
+    } finally {
+      this.state.enrolling = false
+    }
+  }
+
+  /**
+   * Sign the current chain head with the enrolled key. Flushes first so the head the device
+   * signs is one the server has. `uv` 'discouraged' = silent when the platform allows it;
+   * 'required' = Touch ID / PIN (used for the seal).
+   */
+  async checkpoint(uv = 'discouraged') {
+    if (!this.state.credentials.length || this.state.finalized || this.state.signing) return null
+    this.state.signing = true
+    this.state.attestError = null
+    try {
+      await this.flush()
+      while (this.state.syncing) await new Promise((r) => setTimeout(r, 50)) // an in-flight batch must land first
+      if (this.queue.length || this.state.error) throw new Error('ledger not in sync')
+      const head = this.chain.head
+      const res = await signHead((p, i) => this._fetch(p, i), this._sessionPath, head,
+        this.state.credentials.map((c) => c.credential_id), uv)
+      const wa = res.results.find((r) => r.kind === 'webauthn')
+      const ts = res.results.find((r) => r.kind === 'timestamp')
+      this.state.checkpoints = [...this.state.checkpoints, {
+        head, at: res.at_event_count, ts: Date.now(), uv: !!wa?.data?.uv,
+        timestamp: ts?.ok ? ts.data.gen_time : null, tsa: ts?.ok ? ts.data.tsa : null, timestampError: ts && !ts.ok ? ts.detail : null,
+      }]
+      this.state.levelPreview = res.level_if_sealed_now
+      return res
+    } catch (e) {
+      this.state.attestError = e.name === 'NotAllowedError' ? 'Signature cancelled' : e.message
+      throw e
+    } finally {
+      this.state.signing = false
+    }
   }
 }

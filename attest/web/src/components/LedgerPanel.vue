@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import IntegrityPanel from './IntegrityPanel.vue'
 
 const props = defineProps({ state: { type: Object, required: true } })
-const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert'])
+const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert', 'enrol', 'checkpoint'])
 
 const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-6)}` : '—')
+const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const attSummary = computed(() => props.state.certificate?.claims?.attestation ?? null)
 const status = computed(() => {
   if (props.state.error) return { label: 'error', cls: 'bad' }
   if (props.state.finalized) return { label: 'finalized', cls: 'good' }
@@ -40,6 +42,36 @@ const status = computed(() => {
 
     <IntegrityPanel v-if="state.integrity" :integrity="state.integrity" />
 
+    <section class="device">
+      <h3>Device key <span class="pill" :class="state.credentials.length ? 'good' : 'muted'">{{ state.credentials.length ? (state.finalized ? 'used' : `seal → ${state.levelPreview}`) : 'none · seal → L1' }}</span></h3>
+      <template v-if="!state.webauthn">
+        <p class="hint muted">This browser has no WebAuthn support, so the certificate stays at L1 (ledger bound to text).</p>
+      </template>
+      <template v-else-if="!state.credentials.length">
+        <p class="hint muted">Enrol a key that lives in this Mac's Secure Enclave. The chain head is then signed silently every 3 minutes and with Touch ID at submit, so the certificate proves the ledger was on <em>this</em> device.</p>
+        <div class="actions">
+          <button class="primary" :disabled="state.enrolling || state.finalized" @click="emit('enrol')">{{ state.enrolling ? 'Waiting for Touch ID…' : 'Enrol this device' }}</button>
+        </div>
+      </template>
+      <template v-else>
+        <dl>
+          <dt>Key</dt><dd class="mono">{{ short(state.credentials[0].credential_id) }}<span v-if="state.credentials.length > 1" class="muted"> +{{ state.credentials.length - 1 }}</span></dd>
+          <dt>Checkpoints</dt><dd>{{ state.checkpoints.length }}<span class="muted"> this page load</span></dd>
+        </dl>
+        <ul v-if="state.checkpoints.length" class="ckpts">
+          <li v-for="c in state.checkpoints.slice(-4)" :key="c.head" class="mono">
+            {{ clock(c.ts) }} · head {{ c.head.slice(0, 8) }} · {{ c.at }} events{{ c.uv ? ' · Touch ID' : '' }}
+            <span v-if="c.timestamp" class="good"> · TSA {{ c.timestamp.replace('T', ' ').replace('Z', 'Z') }}</span>
+            <span v-else-if="c.timestampError" class="warn" :title="c.timestampError"> · no TSA</span>
+          </li>
+        </ul>
+        <div class="actions">
+          <button :disabled="state.signing || state.finalized || !state.count" @click="emit('checkpoint')">{{ state.signing ? 'Signing…' : 'Sign head now' }}</button>
+        </div>
+      </template>
+      <p v-if="state.attestError" class="warn small">{{ state.attestError }}</p>
+    </section>
+
     <section v-if="state.certificate" class="cert">
       <h3>Certificate <span class="pill good">{{ state.certificate.assurance_level }}</span></h3>
       <dl>
@@ -47,6 +79,16 @@ const status = computed(() => {
         <dt>chain_root</dt><dd class="mono">{{ short(state.certificate.chain_root) }}</dd>
         <dt>merkle_root</dt><dd class="mono">{{ short(state.certificate.merkle_root) }}</dd>
         <dt>events</dt><dd>{{ state.certificate.event_count }}</dd>
+        <template v-if="attSummary">
+          <dt>device</dt>
+          <dd>
+            <span v-if="attSummary.final_head_signed" class="good">final head signed{{ attSummary.uv_at_seal ? ' with Touch ID' : '' }}</span>
+            <span v-else class="muted">not signed</span>
+            · {{ attSummary.device_checkpoints }} checkpoint{{ attSummary.device_checkpoints === 1 ? '' : 's' }}
+          </dd>
+          <dt>timestamps</dt>
+          <dd><span v-if="attSummary.timestamps">{{ attSummary.timestamps }} · {{ attSummary.first_timestamp?.slice(11, 19) }}–{{ attSummary.last_timestamp?.slice(11, 19) }} UTC</span><span v-else class="muted">none</span></dd>
+        </template>
       </dl>
       <div class="actions">
         <button @click="emit('export-cert')">Download certificate</button>
@@ -80,7 +122,10 @@ dt { color: var(--muted); } dd { margin: 0; }
 button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
-.cert { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+.cert, .device { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+.pill.muted { color: var(--muted); }
+.ckpts { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 3px; font-size: 11.5px; }
+.small { font-size: 12px; margin: 6px 0 0; }
 .checks { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; }
 .checks .summary { margin-top: 6px; font-weight: 600; }
 .hint { font-size: 12px; margin-top: 10px; }

@@ -6,7 +6,8 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from attest import __version__ as attest_version
-from attest.main import make_store
+from attest.main import configure_attestation, make_store
+from attest.routers import attestation as attest_attestation
 from attest.routers import certificate as attest_certificate
 from attest.routers import ingest as attest_ingest
 from attest.routers import session as attest_session
@@ -15,7 +16,7 @@ from attest.settings import Settings as AttestSettings
 
 from . import __version__
 from .db import Db
-from .deps import guard_ingest_body, guard_session_path
+from .deps import guard_ingest_body, guard_session_owner, guard_session_path
 from .factcheck import CachedResolver, HttpResolver
 from .routers import assignments, auth, classes, dashboard, factcheck, review, similarity, submissions
 from .settings import ClassroomSettings, settings as default_settings
@@ -27,7 +28,9 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
 
     app.state.settings = cfg
     app.state.db = Db(cfg.DB_PATH)  # creates the data directory; the store opens the same file next
-    app.state.store = make_store(AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS))
+    attest_cfg = AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS)
+    app.state.store = make_store(attest_cfg)
+    configure_attestation(app, attest_cfg)  # WebAuthn RP/origins + TSA from ATTEST_* env
     # Tests swap this for a fake; production resolves against Crossref/doi.org with a 7-day cache.
     app.state.resolver = CachedResolver(HttpResolver(cfg.HTTP_TIMEOUT_S, cfg.CROSSREF_MAILTO), app.state.db)
 
@@ -35,6 +38,7 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
     app.include_router(attest_session.router, dependencies=[Depends(guard_session_path)])
     app.include_router(attest_certificate.router, dependencies=[Depends(guard_session_path)])
     app.include_router(attest_ingest.router, dependencies=[Depends(guard_ingest_body)])
+    app.include_router(attest_attestation.router, dependencies=[Depends(guard_session_owner)])
     app.include_router(attest_verify.router)  # pure; nothing to protect
 
     for r in (auth, dashboard, classes, assignments, submissions, review, factcheck, similarity):

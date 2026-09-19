@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Protocol, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence
 
 LEVELS = ("none", "L0", "L1", "L2", "L3")
 
@@ -24,8 +24,9 @@ class Attestor(Protocol):
         ...
 
 
-def verify_attestations(attestors: Mapping[str, Attestor], statement: bytes,
+def verify_attestations(attestors: Mapping[str, Attestor], statement: Optional[bytes],
                         attestations: Sequence[Mapping[str, Any]]) -> List[AttestationResult]:
+    """With `statement=None` each attestation is checked over its own recorded `head`."""
     results: List[AttestationResult] = []
     for att in attestations:
         kind = str(att.get("kind", ""))
@@ -33,7 +34,12 @@ def verify_attestations(attestors: Mapping[str, Attestor], statement: bytes,
         if a is None:
             results.append(AttestationResult(kind=kind or "?", ok=False, level="none", detail="no verifier for this kind"))
             continue
-        results.append(a.verify(statement, att))
+        try:
+            stmt = statement if statement is not None else bytes.fromhex(str(att.get("head", "")))
+        except ValueError:
+            results.append(AttestationResult(kind=kind, ok=False, level="none", detail="malformed head"))
+            continue
+        results.append(a.verify(stmt, att))
     return results
 
 

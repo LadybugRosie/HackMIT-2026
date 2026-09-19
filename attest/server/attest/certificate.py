@@ -7,20 +7,21 @@ store, so the standalone verifier CLI can do exactly the same checks offline.
 from __future__ import annotations
 
 import time
-from typing import Any, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from .analysis import analyze
+from .attestors import AttestationResult, Attestor, offline_attestors
+from .attestors.policy import LEVEL_CHAIN_VALID, LEVEL_DEVICE_BOUND, LEVEL_DOC_BOUND, assess_attestations
 from .chain import merkle_root, sha256_hex, verify_chain
 from .models import Certificate, Check
 from .replay import ReplayError, replay
 from .storage.base import SessionRecord
 
-LEVEL_CHAIN_VALID = "L0"
-LEVEL_DOC_BOUND = "L1"
-
-
-def build_certificate(session: SessionRecord, final_text: str) -> Tuple[Optional[Certificate], Optional[str]]:
-    """Return (certificate, None) or (None, reason) if the ledger does not bind to final_text."""
+def build_certificate(session: SessionRecord, final_text: str,
+                      attestors: Optional[Mapping[str, Attestor]] = None) -> Tuple[Optional[Certificate], Optional[str]]:
+    """Return (certificate, None) or (None, reason) if the ledger does not bind to final_text.
+    `attestors` are the server's authoritative verifiers; without them attestations are still
+    checked with the keys they embed (the server verified those against enrolment at /attest)."""
     chain = verify_chain(session.events, session.genesis)
     if not chain.ok:
         return None, f"ledger chain invalid at event {chain.index}: {chain.error}"
@@ -31,20 +32,25 @@ def build_certificate(session: SessionRecord, final_text: str) -> Tuple[Optional
     if reconstructed != final_text:
         return None, "replayed ledger does not match final_text (document not bound)"
 
+    chain_root = chain.head or session.genesis
+    heads = {session.genesis, *(e["hash"] for e in session.events)}
+    level, results, summary = assess_attestations(session.attestations, attestors or offline_attestors(), chain_root, heads)
     cert = Certificate(
         session_id=session.session_id,
         doc_sha256=sha256_hex(final_text),
         doc_len=len(final_text),
-        chain_root=chain.head or session.genesis,
+        chain_root=chain_root,
         merkle_root=merkle_root([e["hash"] for e in session.events]),
         event_count=session.event_count,
         genesis=session.genesis,
         created_ms=int(time.time() * 1000),
-        assurance_level=LEVEL_DOC_BOUND,
+        assurance_level=level,
         claims={
             "replay_mismatches_during_session": session.replay_mismatches,
             "integrity": analyze(session.events, final_text).model_dump(),
+            "attestation": {**summary, "results": [r.__dict__ for r in results]},
         },
+        attestations=[dict(a) for a in session.attestations],
     )
     return cert, None
 
@@ -61,7 +67,8 @@ def verify_certificate(
     checks.append(Check(name="doc_len", ok=len_ok, detail=f"{len(text)} vs {cert.doc_len}"))
 
     if events is None:
-        ok = doc_ok and len_ok
+        _attestation_checks(cert, None, checks)
+        ok = all(c.ok for c in checks)
         return ok, cert.assurance_level if ok else "none", checks
 
     chain = verify_chain(events, cert.genesis)
@@ -81,7 +88,25 @@ def verify_certificate(
     except ReplayError as exc:
         replay_ok, detail = False, str(exc)
     checks.append(Check(name="replay", ok=replay_ok, detail=detail))
+    _attestation_checks(cert, {cert.genesis, *(e["hash"] for e in events)} if chain.ok else set(), checks)
 
     all_ok = all(c.ok for c in checks)
     level = cert.assurance_level if all_ok else (LEVEL_CHAIN_VALID if chain.ok and root_ok else "none")
     return all_ok, level, checks
+
+
+def _attestation_checks(cert: Certificate, known_heads: Optional[Set[str]], checks: List[Check],
+                        attestors: Optional[Mapping[str, Attestor]] = None) -> None:
+    """One check per attestation plus `assurance_level`: the level the attestations *actually*
+    support must equal what the certificate claims. A certificate claiming L2 with no verifiable
+    device signature over its chain root fails here."""
+    level, results, summary = assess_attestations(cert.attestations, attestors or offline_attestors(), cert.chain_root, known_heads)
+    for n, (att, res) in enumerate(zip(cert.attestations, results)):
+        head = str(att.get("head", ""))[:12]
+        tag = "final" if att.get("head") == cert.chain_root else ("checkpoint" if known_heads is not None else "checkpoint (ledger needed to place it)")
+        checks.append(Check(name=f"{res.kind}[{n}]", ok=res.ok, detail=f"{tag} {head}… — {res.detail}"))
+    if cert.attestations or cert.assurance_level not in (LEVEL_DOC_BOUND, LEVEL_CHAIN_VALID):
+        level_ok = level == cert.assurance_level
+        checks.append(Check(name="assurance_level", ok=level_ok,
+                            detail=f"attestations support {level}" + ("" if level_ok else f", certificate claims {cert.assurance_level}")))
+

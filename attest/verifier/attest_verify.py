@@ -6,14 +6,28 @@
 Deliberately re-implements the hashing rules instead of importing the server, so a
 verifier can be audited (and run) without trusting or installing the service.
 Wire rules mirror server/attest/chain.py and web/src/lib/chain.js exactly.
+
+L2 attestations (device signatures over chain heads, RFC 3161 timestamps) are checked with the
+pure-stdlib modules under server/attest/{crypto,attestors}/ when that directory sits next to this
+script (or is on PYTHONPATH); otherwise they are reported as unchecked and the level is capped at
+what this file can prove on its own (L1).
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import os
 import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "server"))
+try:  # optional: attestation verification (still stdlib-only, just more code)
+    from attest.attestors import offline_attestors  # type: ignore
+    from attest.attestors.policy import assess_attestations  # type: ignore
+    HAVE_ATTESTORS = True
+except Exception:  # noqa: BLE001
+    HAVE_ATTESTORS = False
 
 CANON_KEYS = ("seq", "ts", "p", "d", "i", "k", "src", "prev")
 
@@ -104,11 +118,32 @@ def main(argv: Optional[List[str]] = None) -> int:
         except ValueError as exc:
             check("replay", False, "", str(exc))
 
+    attestations = cert.get("attestations") or []
+    claimed = cert.get("assurance_level", "?")
+    level_note = ""
+    if attestations or claimed not in ("L0", "L1"):
+        if HAVE_ATTESTORS:
+            heads = None
+            if args.events:
+                heads = {cert["genesis"], *(e["hash"] for e in events)}
+            level, results, summary = assess_attestations(attestations, offline_attestors(), cert["chain_root"], heads)
+            for n, (att, res) in enumerate(zip(attestations, results)):
+                tag = "final" if att.get("head") == cert["chain_root"] else "checkpoint"
+                check(f"{res.kind}[{n}]", res.ok, f"{tag} {str(att.get('head'))[:12]}… — {res.detail}",
+                      f"{tag} {str(att.get('head'))[:12]}… — {res.detail}")
+            check("assurance_level", level == claimed, f"attestations support {level}",
+                  f"attestations support {level}, certificate claims {claimed}")
+            if summary["final_head_signed"]:
+                level_note = (f"  (device-signed final head{' with user verification' if summary['uv_at_seal'] else ''}, "
+                              f"{summary['device_checkpoints']} checkpoint(s), {summary['timestamps']} trusted timestamp(s))")
+        else:
+            check("attestations", False, "", f"{len(attestations)} attestation(s) present but server/attest modules not found — cannot verify above L1")
+
     all_ok = all(ok for _, ok, _ in checks)
     for name, ok, detail in checks:
-        print(f"  [{'PASS' if ok else 'FAIL'}] {name:12s} {detail}")
-    level = cert.get("assurance_level", "?") if all_ok else "none"
-    print(f"\n{'PASS' if all_ok else 'FAIL'} — assurance level {level}"
+        print(f"  [{'PASS' if ok else 'FAIL'}] {name:16s} {detail}")
+    level = claimed if all_ok else "none"
+    print(f"\n{'PASS' if all_ok else 'FAIL'} — assurance level {level}{level_note}"
           f"{'' if args.events else '  (certificate-only check; pass --events for full ledger re-derivation)'}")
     return 0 if all_ok else 1
 

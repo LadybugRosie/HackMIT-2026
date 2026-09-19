@@ -18,6 +18,7 @@ const error = ref('')
 const submitting = ref(false)
 const confirming = ref(false)
 const saved = ref('')
+const locked = ref(false)
 let autosave = null
 
 onMounted(async () => {
@@ -43,10 +44,11 @@ async function submit() {
   if (!confirming.value) { confirming.value = true; return }
   confirming.value = false
   submitting.value = true
+  locked.value = true // nothing typed during the Touch ID prompt can slip in after the seal
   error.value = ''
   try {
     const cert = await ledger.value.finalize()
-    if (!cert) { error.value = ledger.value.state.error || 'Could not finalize the ledger — check the panel.'; return }
+    if (!cert) { error.value = ledger.value.state.error || 'Could not finalize the ledger — check the panel.'; locked.value = false; return }
     const res = await api.post(`/api/submissions/${sub.value.submission_id}/submit`, {
       session_id: ledger.value.state.sessionId, text: getText.value(), certificate: cert,
     })
@@ -56,6 +58,7 @@ async function submit() {
     error.value = code === 'hash_mismatch' || code === 'not_bound'
       ? 'The text on screen no longer matches the finalized ledger. Reload the page and submit again.'
       : e.message
+    locked.value = false
   } finally {
     submitting.value = false
   }
@@ -74,7 +77,7 @@ onBeforeUnmount(() => clearInterval(autosave))
         <p class="muted small">{{ dueLabel(sub.assignment.due_ms) }} · {{ sub.assignment.points }} points <span v-if="saved">· {{ saved }}</span></p>
       </div>
       <div class="submit">
-        <span v-if="confirming" class="muted small">Finalizes your ledger into a certificate and locks the text.</span>
+        <span v-if="confirming" class="muted small">Finalizes your ledger into a certificate and locks the text.<template v-if="ledger?.state.credentials.length"> Touch ID will sign the final head.</template></span>
         <button v-if="confirming" type="button" @click="confirming = false">Cancel</button>
         <button class="primary big" :disabled="submitting || !ledger || ledger.state.error" @click="submit">
           {{ submitting ? 'Submitting…' : confirming ? 'Confirm submit' : 'Submit' }}
@@ -85,10 +88,11 @@ onBeforeUnmount(() => clearInterval(autosave))
     <details class="card instr"><summary>Instructions</summary><p class="pre">{{ sub.assignment.instructions || '—' }}</p></details>
 
     <main class="grid">
-      <Editor :session="session" :initial-text="session.text" :headers="auth.headers" plain
+      <Editor :session="session" :initial-text="session.text" :headers="auth.headers" :readonly="locked" plain
               placeholder="Start writing. Every edit is chained; pastes are recorded as external text." @ready="onReady" />
       <LedgerPanel v-if="ledger" :state="ledger.state" @flush="ledger.flush()" @finalize="ledger.finalize()"
-                   @verify="ledger.verify(getText())" />
+                   @verify="ledger.verify(getText())" @enrol="ledger.enrol().catch(() => {})"
+                   @checkpoint="ledger.checkpoint('discouraged').catch(() => {})" />
     </main>
   </template>
 </template>

@@ -20,7 +20,7 @@ def start_session(payload: SessionStartRequest, request: Request) -> SessionStar
     created_ms = int(time.time() * 1000)
     record = SessionRecord(
         session_id=session_id, server_nonce=nonce, genesis=genesis, created_ms=created_ms,
-        doc_id=payload.doc_id, head=genesis,
+        doc_id=payload.doc_id, head=genesis, owner=session_id,
     )
     request.app.state.store.create(record)
     return SessionStartResponse(session_id=session_id, genesis=genesis, server_nonce=nonce, created_ms=created_ms)
@@ -34,7 +34,7 @@ def get_session(session_id: str, request: Request) -> SessionView:
     return SessionView(
         session_id=rec.session_id, genesis=rec.genesis, created_ms=rec.created_ms,
         event_count=rec.event_count, chain_head=rec.head, replay_mismatches=rec.replay_mismatches,
-        finalized=rec.certificate is not None,
+        finalized=rec.certificate is not None, attestation_count=len(rec.attestations),
     )
 
 

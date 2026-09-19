@@ -54,6 +54,7 @@ class ChainResult:
     head: Optional[str] = None
 
 
+# Verify a chain of events hashes correctly (starting from (prev, start_seq))
 def verify_chain(
     events: Sequence[Mapping[str, Any]], prev: str, start_seq: int = 0
 ) -> ChainResult:
@@ -77,6 +78,7 @@ def verify_chain(
     return ChainResult(True, None, None, expected_prev)
 
 
+# Use Merkle tree to hash leaf hashes into an (almost-certainly) unique unified root
 def merkle_root(leaf_hashes: Sequence[str]) -> str:
     """Binary Merkle root over hex leaf hashes (odd node duplicated). Empty -> SHA256("")."""
     if not leaf_hashes:

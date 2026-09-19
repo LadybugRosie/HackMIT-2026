@@ -76,7 +76,7 @@ def ledger(submission_id: str, db: Db = Depends(get_db), store=Depends(get_store
         session_id, nonce = new_id(), secrets.token_hex(16)
         genesis = genesis_hash(session_id, nonce)
         store.create(SessionRecord(session_id=session_id, server_nonce=nonce, genesis=genesis, created_ms=now_ms(),
-                                   doc_id=submission_id, head=genesis))
+                                   doc_id=submission_id, head=genesis, owner=user["user_id"]))
         db.exec("UPDATE submissions SET ledger_session_id = ?, updated_ms = ? WHERE submission_id = ? AND ledger_session_id IS NULL",
                 (session_id, now_ms(), submission_id))
         session_id = db.one("SELECT ledger_session_id FROM submissions WHERE submission_id = ?", (submission_id,))["ledger_session_id"]
@@ -102,7 +102,7 @@ def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTas
         raise HTTPException(409, {"code": "wrong_session", "detail": "session is not the ledger bound to this submission"})
 
     if rec.certificate is None:
-        cert, reason = build_certificate(rec, payload.text)
+        cert, reason = build_certificate(rec, payload.text, request.app.state.attestors)
         if cert is None:
             raise HTTPException(409, {"code": "not_bound", "detail": reason})
         cert_dict = cert.model_dump()

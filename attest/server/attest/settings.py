@@ -13,5 +13,13 @@ class Settings(BaseSettings):
     MAX_EVENT_TEXT_CHARS: int = 200_000
     STYLOMETRY_BASE: str = ""  # empty -> deterministic local stub (Stage 5)
 
+    # Stage 3 (L2): device attestation via WebAuthn + RFC 3161 timestamps
+    WEBAUTHN_RP_ID: str = "localhost"          # must be the origin's host (or a registrable suffix of it)
+    WEBAUTHN_RP_NAME: str = "attest"
+    WEBAUTHN_ORIGINS: List[str] = ["http://localhost:9100", "http://localhost:8090"]
+    TSA_URL: str = "https://freetsa.org/tsr"   # empty string disables trusted timestamps
+    TSA_TIMEOUT_S: float = 8.0
+    TSA_TRUSTED_FINGERPRINTS: List[str] = []   # extra TSA signer-cert SHA-256s beyond the built-in list
+
 
 settings = Settings()
