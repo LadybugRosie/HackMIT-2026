@@ -194,12 +194,34 @@ def _local_backend_score(source_blob: str, ctx: str) -> Optional[Dict[str, Any]]
     return a dict shaped like the LLM response, or None if neither backend
     is available / configured.
     """
-    backend_name = (settings.ALIGNMENT_BACKEND or "openai").lower()
-    if backend_name == "openai":
-        return None
-
     # Pick which local backend to invoke (or all of them for "ensemble").
     from .local_models import get_backend, available_backends
+
+    backend_name = (settings.ALIGNMENT_BACKEND or "openai").lower()
+    if backend_name == "openai":
+        # The OpenAI path needs a key. Without one it returns nothing, and
+        # citation alignment — the ONLY check that catches a real DOI attached
+        # to a claim it does not support — silently does nothing at all. That
+        # is a hard failure disguised as a clean run: on the bundled eval
+        # corpus it scored 0/40 on exactly that class. If local weights are
+        # installed, use them instead of degrading to no checking.
+        if settings.OPENAI_API_KEY:
+            return None
+        fallback = next((b for b in ("minicheck", "nli", "hhem")
+                         if b in available_backends()), None)
+        if not fallback:
+            logger.warning(
+                "Citation alignment is DISABLED: ALIGNMENT_BACKEND=openai with no "
+                "OPENAI_API_KEY, and no local backend installed. Mismatched-citation "
+                "detection will not run. Set OPENAI_API_KEY, or "
+                "`pip install -r requirements-local.txt` and set ALIGNMENT_BACKEND=nli."
+            )
+            return None
+        logger.info(
+            "No OPENAI_API_KEY set; using local alignment backend %r instead of "
+            "skipping citation alignment.", fallback,
+        )
+        backend_name = fallback
 
     try_order: List[str]
     if backend_name == "minicheck":
@@ -255,10 +277,11 @@ def _local_backend_score(source_blob: str, ctx: str) -> Optional[Dict[str, Any]]
 
 # Re-exported here so _local_backend_score above stays self-contained.
 def _band_from_prob(p: float) -> str:
+    # Mirror of local_models._band_from_prob — see the rationale there: a scalar
+    # supportedness score cannot distinguish off-topic from contradicted.
     if p >= 0.80: return "supported"
     if p >= 0.55: return "partial"
-    if p >= 0.30: return "unrelated"
-    return "contradicted"
+    return "unrelated"
 
 
 _ALIGN_POS = ("align", "confirm", "support", "consistent", "agree", "matches",

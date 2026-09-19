@@ -47,11 +47,16 @@ class AlignmentScore:
 
 
 def _band_from_prob(p: float) -> str:
-    """Threshold a 0-1 supportedness probability into one of the verdict bands."""
+    """Threshold a 0-1 supportedness probability into one of the verdict bands.
+
+    A single scalar says only HOW SUPPORTED the claim is; it cannot tell an
+    off-topic source from one that states the opposite. The low band therefore
+    reports "unrelated" (no support found) rather than "contradicted", which
+    would assert a finding the score does not contain.
+    """
     if p >= 0.80: return "supported"
     if p >= 0.55: return "partial"
-    if p >= 0.30: return "unrelated"
-    return "contradicted"
+    return "unrelated"
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -130,10 +135,19 @@ class NLIBackend:
             raise RuntimeError(
                 "NLI backend requires `transformers`. Install requirements-local.txt."
             ) from e
+        import torch  # noqa: WPS433  (lazy import)
+
         logger.info("Loading DeBERTa-v3-large NLI (one-time download ≈440 MB)…")
         self._tokenizer = AutoTokenizer.from_pretrained(self.MODEL_ID, revision=self.DEFAULT_REVISION)
+        # This checkpoint is stored in float16, and recent transformers honours
+        # the checkpoint dtype by default. On CPU that produces
+        # "mat1 and mat2 must have the same dtype (Float vs Half)" on every
+        # call — the backend then fails closed and alignment silently stops
+        # running. Since this backend exists precisely to be the CPU/macOS
+        # option, pin float32 unless we are on CUDA.
+        dtype = torch.float16 if torch.cuda.is_available() else torch.float32
         self._model = AutoModelForSequenceClassification.from_pretrained(
-            self.MODEL_ID, revision=self.DEFAULT_REVISION
+            self.MODEL_ID, revision=self.DEFAULT_REVISION, dtype=dtype
         )
         self._model.eval()
         # Map id → label using the model's config; expected labels are
@@ -164,17 +178,27 @@ class NLIBackend:
         p_con = _prob("contradic")
         p_neu = _prob("neutral")
 
-        # Banding rules for our 5-way verdict:
-        if p_ent >= 0.70:
-            support = "supported"
-        elif p_con >= 0.70:
-            support = "contradicted"
-        elif p_ent >= 0.40:
-            support = "partial"
-        elif p_neu >= 0.50:
-            support = "unrelated"
+        # Decide by which class actually WINS the 3-way softmax, then grade the
+        # strength. The previous cascade tested `p_ent >= 0.40` before
+        # `p_neu >= 0.50`, so entailment won any race it merely entered: a
+        # source scoring ent=0.487 / neu=0.511 — neutral, i.e. off-topic — was
+        # reported as "partial" support. It also fell through to "partial" when
+        # no class was confident, asserting support precisely where the model
+        # was least certain. Neither is defensible for a citation checker, whose
+        # job is to say "this source does not back the claim".
+        top = max(p_ent, p_neu, p_con)
+        if top < 0.40:
+            # Genuinely undecided three ways — say so instead of guessing.
+            support = "unknown"
+        elif top == p_ent:
+            support = "supported" if p_ent >= 0.70 else "partial"
+        elif top == p_con:
+            # Contradiction is the strongest accusation here; require confidence.
+            support = "contradicted" if p_con >= 0.60 else "unrelated"
         else:
-            support = "partial"
+            # Neutral wins: the source is off-topic for this claim. That is not
+            # partial support, and it is not a contradiction.
+            support = "unrelated"
         return AlignmentScore(
             support=support,
             probability=p_ent,

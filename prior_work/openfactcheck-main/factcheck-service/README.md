@@ -165,10 +165,19 @@ curl -s http://localhost:8080/v1/verify \
 | `MAX_ALIGNMENT_DOIS` | `25` | Cap on per-request alignment calls |
 | `ENABLE_FABRICATION_DETECTORS` | `true` | Numeric / venue / institution / ghost-author checks |
 | `ENABLE_BIBLIOGRAPHY_REPORT` | `true` | Bibliography ↔ in-text consistency |
-| `ALIGNMENT_BACKEND` | `openai` | `openai` (gpt-4o), `minicheck` (SOTA Bespoke-MiniCheck-7B), `hhem` (Vectara HHEM-2.1-Open), or `ensemble` (MiniCheck + HHEM) |
+| `ALIGNMENT_BACKEND` | `openai` | `openai` (gpt-4o), `nli` (DeBERTa-v3-large MNLI, CPU-friendly), `minicheck` (SOTA Bespoke-MiniCheck-7B), `hhem` (Vectara HHEM-2.1-Open), or `ensemble`. **With `openai` and no `OPENAI_API_KEY`, falls back to the best installed local backend** rather than skipping alignment |
 | `LOCAL_MODEL_CACHE_DIR` | `./ckpts` | Where local HF weights get cached |
 
 ### Alignment backends — accuracy vs cost
+
+> **Citation alignment needs a backend.** It is the only check that catches a real
+> DOI attached to a claim the source does not support. With `ALIGNMENT_BACKEND=openai`
+> (the default) and no `OPENAI_API_KEY`, that check used to silently do nothing — it
+> scored **0/40** on the `frankenstein_citation` class of `eval/cases_corpus.jsonl`.
+> It now falls back to a local backend when one is installed, and logs a warning
+> naming both remedies when none is. Installing `requirements-local.txt` takes the
+> bundled corpus from **66.7% to 98.3%** with no API key (`eval/corpus_results_v6.json`).
+
 
 | Backend | Accuracy | Size | License | Needs |
 |---|---|---|---|---|
