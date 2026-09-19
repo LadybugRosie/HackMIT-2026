@@ -45,6 +45,50 @@ class IngestRequest(BaseModel):
     content_len: int = Field(ge=0)
 
 
+Verdict = Literal["genuine", "review", "suspicious", "insufficient_data"]
+
+
+class Signal(BaseModel):
+    name: str
+    verdict: Verdict
+    confidence: float = Field(ge=0, le=1)
+    label: str
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class Scores(BaseModel):
+    trust: int = Field(ge=0, le=100)
+    composition: int = Field(ge=0, le=100)
+
+
+class Mix(BaseModel):
+    typed: float
+    internal: float
+    external: float
+
+
+class Span(BaseModel):
+    start: int
+    end: int
+
+
+class IntegrityWarning(BaseModel):
+    severity: Literal["low", "medium", "high"]
+    code: str
+    reason: str
+
+
+class IntegrityResponse(BaseModel):
+    scores: Scores
+    mix: Mix
+    ext_spans: List[Span] = Field(default_factory=list)
+    signals: List[Signal] = Field(default_factory=list)
+    verdict: Verdict
+    confidence: float
+    warnings: List[IntegrityWarning] = Field(default_factory=list)
+    coverage: Dict[str, Any] = Field(default_factory=dict)
+
+
 class IngestResponse(BaseModel):
     session_id: str
     chain_head: str
@@ -52,6 +96,7 @@ class IngestResponse(BaseModel):
     replay_ok: bool
     replay_sha256: str
     replay_len: int
+    integrity: Optional[IntegrityResponse] = None
 
 
 class SessionView(BaseModel):

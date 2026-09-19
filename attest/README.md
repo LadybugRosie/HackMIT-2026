@@ -43,6 +43,29 @@ The append-only invariant is checked by property-based tests
 (`server/tests/test_chain.py`): for arbitrary edit sequences the built chain verifies and
 replays, and *any* single-field mutation of *any* event breaks verification at that index.
 
+## Provenance and process signals (Stage 2)
+
+A piece table (`server/attest/provenance.py`) replays the ledger and labels every span of
+the current text **T** (typed), **INT** (pasted text copied from this document within 30 s —
+re-derived from `copy` events in the ledger, never from the client's hint) or **EXT**
+(pasted from outside). On top of that, pluggable signals in `server/attest/signals/` read
+the *process*, each returning `genuine | review | suspicious | insufficient_data`:
+
+| Signal | What it measures |
+|---|---|
+| `inter_key_interval` | Keystroke rhythm variability — humans are irregular; scripts are uniform or superhuman |
+| `typed_speed` | Typed-only WPM in 10 s windows (pastes excluded) — catches "typed" text that arrived too fast |
+| `transcription_cadence` | Whether pauses land at word/clause boundaries (composing) or mid-word in steady chunks (copying from a second screen) |
+| `revision_effort` | Keystrokes + deletions per final character — rework leaves fingerprints |
+| `edit_locality` | Share of edits that revisit earlier text vs. strictly append-only writing |
+
+Timing comes from content-free `kd`/`ku` events (a key went down/up — no key identity),
+falling back to edit timestamps. `scoring.py` aggregates with innocence-protecting gates:
+`suspicious` needs at least two weighted votes, three unmeasured signals force `review`,
+and warnings are phrased neutrally. Results ride along on every `/v1/ingest` response and
+are embedded in the certificate's `claims.integrity`. Set `ATTEST_STORE=sqlite` to persist
+sessions across restarts.
+
 ## Layout
 
 ```

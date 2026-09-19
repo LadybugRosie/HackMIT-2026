@@ -36,11 +36,22 @@ export const Capture = Extension.create({
 
   onCreate() {
     this.storage.prev = [...docText(this.editor)]
-    this.editor.view.dom.addEventListener('copy', () => {
-      this.storage.lastCopied = window.getSelection()?.toString() ?? null
+    const dom = this.editor.view.dom
+    const onCopy = () => {
+      const text = window.getSelection()?.toString() ?? ''
+      this.storage.lastCopied = text
+      // Recorded in the ledger so the server can re-derive internal vs external pastes itself.
+      if (text) this.options.onEvent({ ts: Date.now(), p: 0, d: 0, i: text, k: 'copy', src: null })
+    }
+    dom.addEventListener('copy', onCopy)
+    dom.addEventListener('cut', onCopy)
+    // Timing-only events: no key identity, just when a physical key went down/up.
+    const timingKey = (e) => e.key.length === 1 || ['Backspace', 'Enter', 'Delete', 'Tab'].includes(e.key)
+    dom.addEventListener('keydown', (e) => {
+      if (timingKey(e) && !e.metaKey && !e.ctrlKey) this.options.onEvent({ ts: Date.now(), p: 0, d: 0, i: '', k: 'kd', src: null })
     })
-    this.editor.view.dom.addEventListener('cut', () => {
-      this.storage.lastCopied = window.getSelection()?.toString() ?? null
+    dom.addEventListener('keyup', (e) => {
+      if (timingKey(e) && !e.metaKey && !e.ctrlKey) this.options.onEvent({ ts: Date.now(), p: 0, d: 0, i: '', k: 'ku', src: null })
     })
   },
 

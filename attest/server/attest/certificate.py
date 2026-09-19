@@ -9,6 +9,7 @@ from __future__ import annotations
 import time
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from .analysis import analyze
 from .chain import merkle_root, sha256_hex, verify_chain
 from .models import Certificate, Check
 from .replay import ReplayError, replay
@@ -40,7 +41,10 @@ def build_certificate(session: SessionRecord, final_text: str) -> Tuple[Optional
         genesis=session.genesis,
         created_ms=int(time.time() * 1000),
         assurance_level=LEVEL_DOC_BOUND,
-        claims={"replay_mismatches_during_session": session.replay_mismatches},
+        claims={
+            "replay_mismatches_during_session": session.replay_mismatches,
+            "integrity": analyze(session.events, final_text).model_dump(),
+        },
     )
     return cert, None
 

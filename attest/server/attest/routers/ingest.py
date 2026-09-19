@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 
+from ..analysis import analyze
 from ..chain import sha256_hex, verify_chain
 from ..models import IngestRequest, IngestResponse
 from ..replay import ReplayError, replay
@@ -45,4 +46,5 @@ def ingest(payload: IngestRequest, request: Request) -> IngestResponse:
     return IngestResponse(
         session_id=rec.session_id, chain_head=rec.head, event_count=rec.event_count,
         replay_ok=replay_ok, replay_sha256=replay_sha, replay_len=len(text),
+        integrity=analyze(rec.events, text),
     )

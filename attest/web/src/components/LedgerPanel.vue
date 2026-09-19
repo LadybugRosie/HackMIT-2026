@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import IntegrityPanel from './IntegrityPanel.vue'
 
 const props = defineProps({ state: { type: Object, required: true } })
 const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert'])
@@ -36,6 +37,8 @@ const status = computed(() => {
       <button @click="emit('flush')" :disabled="state.finalized">Flush now</button>
       <button class="primary" @click="emit('finalize')" :disabled="state.finalized || !state.count">Finalize → certificate</button>
     </div>
+
+    <IntegrityPanel v-if="state.integrity" :integrity="state.integrity" />
 
     <section v-if="state.certificate" class="cert">
       <h3>Certificate <span class="pill good">{{ state.certificate.assurance_level }}</span></h3>

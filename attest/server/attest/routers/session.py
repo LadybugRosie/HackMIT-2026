@@ -4,8 +4,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Request
 
+from ..analysis import analyze
 from ..chain import genesis_hash
-from ..models import SessionStartRequest, SessionStartResponse, SessionView
+from ..models import IntegrityResponse, SessionStartRequest, SessionStartResponse, SessionView
 from ..storage.base import SessionRecord
 
 router = APIRouter(prefix="/v1/session", tags=["session"])
@@ -35,6 +36,14 @@ def get_session(session_id: str, request: Request) -> SessionView:
         event_count=rec.event_count, chain_head=rec.head, replay_mismatches=rec.replay_mismatches,
         finalized=rec.certificate is not None,
     )
+
+
+@router.get("/{session_id}/integrity", response_model=IntegrityResponse)
+def get_integrity(session_id: str, request: Request) -> IntegrityResponse:
+    rec = request.app.state.store.get(session_id)
+    if rec is None:
+        raise HTTPException(404, "unknown session")
+    return analyze(rec.events)
 
 
 @router.get("/{session_id}/events")

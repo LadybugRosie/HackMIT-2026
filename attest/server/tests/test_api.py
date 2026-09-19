@@ -103,3 +103,24 @@ def test_ingest_after_finalize_is_refused(client):
 
 def test_unknown_session_404(client):
     assert client.get("/v1/session/nope").status_code == 404
+
+
+def test_ingest_returns_integrity_and_certificate_embeds_it(client):
+    from synth import SAMPLE, human_composition
+    s = start(client)
+    events = build_chain(s["genesis"], human_composition(SAMPLE))
+    from attest.replay import replay
+    text = replay(events)
+    r = ingest(client, s, events, text)
+    assert r.status_code == 200
+    integ = r.json()["integrity"]
+    assert integ["verdict"] == "genuine" and integ["mix"]["typed"] == 1.0
+    assert {sg["name"] for sg in integ["signals"]} == {
+        "inter_key_interval", "typed_speed", "transcription_cadence", "revision_effort", "edit_locality"}
+
+    live = client.get(f"/v1/session/{s['session_id']}/integrity").json()
+    assert live["verdict"] == "genuine"
+
+    cert = client.post(f"/v1/session/{s['session_id']}/finalize", json={"final_text": text}).json()
+    assert cert["claims"]["integrity"]["verdict"] == "genuine"
+    assert cert["claims"]["integrity"]["coverage"]["measured_signals"] == 5
