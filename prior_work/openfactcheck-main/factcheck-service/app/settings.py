@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     MAX_REFERENCES_TO_CHECK: int = 300    # full bibliographies (was 50)
     MAX_URLS_TO_CHECK: int = 200          # (was 50)
 
+    # Reference checks are independent network I/O, so they run concurrently.
+    # Bounded to stay a polite client of Crossref/DataCite/doi.org: at 300
+    # references a sequential pass took ~225s, past most gateway timeouts.
+    REFERENCE_CHECK_CONCURRENCY: int = 8
+
+    # Bounds for the in-process cache used when Redis is unreachable. Without
+    # these the fallback grows for the lifetime of the process.
+    MEMORY_CACHE_MAX_ENTRIES: int = 50000
+    MEMORY_CACHE_SWEEP_SECONDS: int = 60
+
     # API keys as comma-separated string (avoids JSON parsing issues with empty values)
     API_KEYS: str = ""
     # Fail closed: when True, /v1/verify REQUIRES a valid x-api-key. If API_KEYS is

@@ -122,8 +122,8 @@ curl -s http://localhost:8080/v1/verify \
       },
       {
         "doi": "10.9999/fake.2021.12345",
-        "status": "invalid",
-        "note": "Invalid DOI format or fake registrant prefix"
+        "status": "not_found",
+        "note": "DOI not found in doi.org, Crossref, or DataCite"
       }
     ],
     "summary": {
@@ -156,8 +156,8 @@ curl -s http://localhost:8080/v1/verify \
 | `URL_TIMEOUT_SECONDS` | `3` | Timeout for URL checks |
 | `SOURCE_FETCH_TIMEOUT_SECONDS` | `8` | Timeout for metadata/abstract lookups (Crossref, OpenAlex, S2, arXiv, ROR, Wikipedia) |
 | `SEMANTIC_SCHOLAR_API_KEY` | `` | Free key from semanticscholar.org — without it S2 shares a global rate limit and title lookups are often 429'd |
-| `MAX_REFERENCES_TO_CHECK` | `50` | Max DOIs to validate per request |
-| `MAX_URLS_TO_CHECK` | `50` | Max URLs to validate per request |
+| `MAX_REFERENCES_TO_CHECK` | `300` | Max DOIs to validate per request |
+| `MAX_URLS_TO_CHECK` | `200` | Max URLs to validate per request |
 | `CACHE_TTL_SECONDS` | `604800` | Cache TTL (7 days) |
 | `ENABLE_DOCS` | `true` | Enable Swagger UI |
 | `ENABLE_OPENAI_WEBSEARCH` | `false` | Cost control: disabled by default |
@@ -231,7 +231,10 @@ curl -s http://localhost:8080/v1/verify \
   -H 'Content-Type: application/json' \
   -d '{"text": "Fake study (DOI: 10.9999/fake.2021.12345)"}' \
   | jq '.reference_report.dois[0].status'
-# Expected: "invalid"
+# Expected: "not_found"
+#   "invalid"   = string is not DOI syntax at all
+#   "not_found" = well-formed but unknown to doi.org / Crossref / DataCite
+# Both count toward reference_report.summary.invalid_dois.
 ```
 
 ### Test 3: Marie Curie Fact Check

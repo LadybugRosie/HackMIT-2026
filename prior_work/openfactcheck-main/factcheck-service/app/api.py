@@ -288,68 +288,75 @@ async def _check_references(text: str) -> ReferenceReport:
     """
     dois = extract_dois(text)
     urls = extract_urls(text)
-    
-    doi_results: List[DOIResult] = []
-    url_results: List[URLResult] = []
-    
-    # Check DOIs with cache (includes metadata)
-    for doi in dois:
+
+    # Each lookup is independent network I/O, so they run concurrently under a
+    # bounded semaphore. asyncio.gather preserves input order, so the report
+    # still lists references in the order they appear in the document.
+    sem = asyncio.Semaphore(max(1, settings.REFERENCE_CHECK_CONCURRENCY))
+
+    async def _one_doi(doi: str) -> DOIResult:
         cache_key = doi_cache_key(doi)
         cached = await get_cached_doi(cache_key)
         if cached:
             CACHE_HITS_TOTAL.inc()
-            doi_results.append(DOIResult(
+            return DOIResult(
                 doi=cached["doi"],
                 status=DOIStatus(cached["status"]),
                 registrar=cached.get("registrar"),
                 resolved_url=cached.get("resolved_url"),
                 metadata=_dict_to_metadata(cached.get("metadata")),
                 note=cached.get("note"),
-            ))
-        else:
-            CACHE_MISSES_TOTAL.inc()
+            )
+        CACHE_MISSES_TOTAL.inc()
+        async with sem:
             result = await check_doi(doi)
-            doi_results.append(result)
-            # Cache the result with metadata
-            await set_cached_doi(cache_key, {
-                "doi": result.doi,
-                "status": result.status.value,
-                "registrar": result.registrar,
-                "resolved_url": result.resolved_url,
-                "metadata": _metadata_to_dict(result.metadata),
-                "note": result.note,
-            })
-    
+        # Cache the result with metadata
+        await set_cached_doi(cache_key, {
+            "doi": result.doi,
+            "status": result.status.value,
+            "registrar": result.registrar,
+            "resolved_url": result.resolved_url,
+            "metadata": _metadata_to_dict(result.metadata),
+            "note": result.note,
+        })
+        return result
+
+    async def _one_url(url: str) -> URLResult:
+        cache_key = url_cache_key(url)
+        cached = await get_cached_url(cache_key)
+        if cached:
+            CACHE_HITS_TOTAL.inc()
+            return URLResult(
+                url=cached["url"],
+                status=URLStatus(cached["status"]),
+                http_status=cached.get("http_status"),
+                final_url=cached.get("final_url"),
+                note=cached.get("note"),
+            )
+        CACHE_MISSES_TOTAL.inc()
+        async with sem:
+            result = await check_url(url)
+        # Add note for sites that return 200 for unknown routes
+        if result.status == URLStatus.OK and result.http_status == 200:
+            if "editorrah" in url.lower():
+                result.note = "Route-level 404 not enforced by site"
+        await set_cached_url(cache_key, {
+            "url": result.url,
+            "status": result.status.value,
+            "http_status": result.http_status,
+            "final_url": result.final_url,
+            "note": result.note,
+        })
+        return result
+
+    doi_results: List[DOIResult] = list(
+        await asyncio.gather(*(_one_doi(d) for d in dois))
+    )
     # Check URLs with cache (only in REGISTRY_ONLY or HYBRID mode)
+    url_results: List[URLResult] = []
     if settings.EVIDENCE_MODE != EvidenceMode.OFFLINE_ONLY:
-        for url in urls:
-            cache_key = url_cache_key(url)
-            cached = await get_cached_url(cache_key)
-            if cached:
-                CACHE_HITS_TOTAL.inc()
-                url_results.append(URLResult(
-                    url=cached["url"],
-                    status=URLStatus(cached["status"]),
-                    http_status=cached.get("http_status"),
-                    final_url=cached.get("final_url"),
-                    note=cached.get("note"),
-                ))
-            else:
-                CACHE_MISSES_TOTAL.inc()
-                result = await check_url(url)
-                url_results.append(result)
-                # Add note for sites that return 200 for unknown routes
-                if result.status == URLStatus.OK and result.http_status == 200:
-                    if "editorrah" in url.lower():
-                        result.note = "Route-level 404 not enforced by site"
-                await set_cached_url(cache_key, {
-                    "url": result.url,
-                    "status": result.status.value,
-                    "http_status": result.http_status,
-                    "final_url": result.final_url,
-                    "note": result.note,
-                })
-    
+        url_results = list(await asyncio.gather(*(_one_url(u) for u in urls)))
+
     return ReferenceReport(dois=doi_results, urls=url_results)
 
 

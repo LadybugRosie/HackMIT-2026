@@ -90,6 +90,8 @@ _KNOWN_FACTS: List[Tuple[str, str, str, str, str]] = [
     
     # Common myths (contradicted)
     ("great wall of china can be seen from the moon", "contradicted", "This is a common myth. Astronauts have confirmed the Great Wall is not visible from the Moon with the naked eye. It is barely visible from low Earth orbit under ideal conditions.", "NASA", "https://www.nasa.gov/vision/space/workinginspace/great_wall.html"),
+    ("great wall of china is visible from the moon", "contradicted", "This is a common myth. Astronauts have confirmed the Great Wall is not visible from the Moon with the naked eye.", "NASA", "https://www.nasa.gov/vision/space/workinginspace/great_wall.html"),
+    ("great wall of china can be seen from space", "contradicted", "While theoretically visible from low Earth orbit under ideal conditions, the Great Wall is very difficult to see due to its narrow width. It is certainly not visible from the Moon.", "NASA", "https://earthobservatory.nasa.gov/images/8246/the-great-wall-of-china"),
     ("great wall of china is visible from space", "contradicted", "While theoretically visible from low Earth orbit under ideal conditions, the Great Wall is very difficult to see due to its narrow width. It is certainly not visible from the Moon.", "NASA", "https://earthobservatory.nasa.gov/images/8246/the-great-wall-of-china"),
     ("humans only use 10 percent of their brain", "contradicted", "This is a myth. Brain imaging studies show that over a day, all brain areas are active. Different tasks activate different regions.", "Scientific American", "https://www.scientificamerican.com/article/do-people-only-use-10-percent-of-their-brains/"),
     ("humans only use 10% of their brain", "contradicted", "This is a myth. Brain imaging studies show that over a day, all brain areas are active. Different tasks activate different regions.", "Scientific American", "https://www.scientificamerican.com/article/do-people-only-use-10-percent-of-their-brains/"),
@@ -112,6 +114,8 @@ _KNOWN_FACTS: List[Tuple[str, str, str, str, str]] = [
     ("earth revolves around the sun", "supported", "Earth orbits the Sun at an average distance of about 150 million kilometers (93 million miles).", "NASA", "https://science.nasa.gov/earth/facts/"),
     ("speed of light is approximately 300000 kilometers per second", "supported", "The speed of light in vacuum is exactly 299,792,458 meters per second (approximately 300,000 km/s).", "NIST", "https://physics.nist.gov/cgi-bin/cuu/Value?c"),
     ("speed of light is approximately 300,000 km/s", "supported", "The speed of light in vacuum is exactly 299,792,458 meters per second (approximately 300,000 km/s).", "NIST", "https://physics.nist.gov/cgi-bin/cuu/Value?c"),
+    ("speed of light in vacuum is 299792458 meters per second", "supported", "The speed of light in vacuum is exactly 299,792,458 metres per second by definition of the metre.", "NIST", "https://physics.nist.gov/cgi-bin/cuu/Value?c"),
+    ("speed of light is 299792458 meters per second", "supported", "The speed of light in vacuum is exactly 299,792,458 metres per second by definition of the metre.", "NIST", "https://physics.nist.gov/cgi-bin/cuu/Value?c"),
     ("dna has a double helix structure", "supported", "DNA has a double helix structure, as discovered by Watson and Crick in 1953.", "Nature", "https://www.nature.com/articles/171737a0"),
     ("einstein published the theory of special relativity in 1905", "supported", "Albert Einstein published his theory of special relativity in 1905 in the paper 'On the Electrodynamics of Moving Bodies'.", "Wikipedia", "https://en.wikipedia.org/wiki/Special_relativity"),
     ("einstein published the theory of general relativity in 1915", "supported", "Albert Einstein completed his theory of general relativity in 1915.", "Wikipedia", "https://en.wikipedia.org/wiki/General_relativity"),
@@ -190,6 +194,11 @@ _PRECISE_NUMERIC_PATTERN = re.compile(
 )
 
 
+def _strip_digit_commas(text: str) -> str:
+    """Remove thousands separators so "299,792,458" and "299792458" compare equal."""
+    return re.sub(r"(?<=\d),(?=\d)", "", text)
+
+
 def _normalize_text(text: str) -> str:
     """Normalize text for matching."""
     text = text.lower().strip()
@@ -200,7 +209,7 @@ def _normalize_text(text: str) -> str:
     # Remove "the " at the start for more flexible matching
     if text.startswith('the '):
         text = text[4:]
-    return text
+    return _strip_digit_commas(text)
 
 
 # Words that signal the claim asserts something BEYOND the matched KB fact — a
@@ -245,6 +254,7 @@ def _match_known_fact(claim: str) -> Optional[Dict[str, Any]]:
     
     # Direct pattern matching
     for pattern, verdict, snippet, source, url in _KNOWN_FACTS:
+        pattern = _strip_digit_commas(pattern)
         if pattern in claim_normalized:
             if verdict == "supported":
                 # A true fragment cannot vouch for a sentence that asserts more.

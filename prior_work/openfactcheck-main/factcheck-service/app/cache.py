@@ -2,6 +2,7 @@ import hashlib
 import json
 import threading
 import time
+from collections import OrderedDict
 from typing import Dict, Iterable, Optional
 
 from redis.asyncio import Redis
@@ -10,9 +11,20 @@ from .settings import settings
 
 
 class _MemoryStore:
+    """In-process stand-in for Redis, used when Redis is unreachable.
+
+    Expiry alone is not enough to bound this store: `_purge` only evicts the
+    single key being read, so an entry written and never read again would live
+    for the whole process lifetime (CACHE_TTL_SECONDS defaults to 7 days). Since
+    the service falls back here silently on a Redis outage, that turned an
+    outage into a slow memory leak. A full sweep plus a hard entry cap keeps it
+    bounded; insertion order makes the overflow eviction FIFO.
+    """
+
     def __init__(self) -> None:
-        self._data: Dict[str, tuple[str, Optional[float]]] = {}
+        self._data: "OrderedDict[str, tuple[str, Optional[float]]]" = OrderedDict()
         self._lock = threading.Lock()
+        self._last_sweep = time.monotonic()
 
     def _purge(self, key: str) -> None:
         value = self._data.get(key)
@@ -21,6 +33,20 @@ class _MemoryStore:
         _, expires_at = value
         if expires_at is not None and expires_at <= time.time():
             self._data.pop(key, None)
+
+    def _sweep_locked(self) -> None:
+        """Drop every expired entry, then any excess by insertion order."""
+        now = time.monotonic()
+        if now - self._last_sweep >= settings.MEMORY_CACHE_SWEEP_SECONDS:
+            self._last_sweep = now
+            wall = time.time()
+            for key in [
+                k for k, (_, exp) in self._data.items()
+                if exp is not None and exp <= wall
+            ]:
+                self._data.pop(key, None)
+        while len(self._data) > settings.MEMORY_CACHE_MAX_ENTRIES:
+            self._data.popitem(last=False)
 
     def get(self, key: str) -> Optional[str]:
         with self._lock:
@@ -35,6 +61,8 @@ class _MemoryStore:
         expires_at = time.time() + ttl if ttl else None
         with self._lock:
             self._data[key] = (value, expires_at)
+            self._data.move_to_end(key)
+            self._sweep_locked()
 
     def incr(self, key: str) -> int:
         with self._lock:
@@ -43,6 +71,7 @@ class _MemoryStore:
             current = int(value[0]) if value else 0
             current += 1
             self._data[key] = (str(current), value[1] if value else None)
+            self._sweep_locked()
             return current
 
     def expire(self, key: str, ttl: int) -> None:

@@ -138,6 +138,26 @@ def normalize_doi(doi: str) -> str:
     return doi.strip()
 
 
+# A DOI suffix never legitimately ends on one of these — a capture that does
+# was cut short (PDF line-wrap, trailing-punctuation strip, etc.).
+_TRUNCATION_TAIL = "-._/:;(,"
+
+
+def _is_truncation_fragment(doi: str) -> bool:
+    """True if `doi` looks like an incomplete capture in its own right.
+
+    Two structural signals, both of which a complete DOI never exhibits:
+      * it ends on a separator character (e.g. "10.1038/s41586-021-"), or
+      * it has an unclosed '(' (e.g. "10.1016/S0140-6736(20").
+    """
+    suffix = doi.split("/", 1)[1] if "/" in doi else ""
+    if not suffix:
+        return True
+    if suffix[-1] in _TRUNCATION_TAIL:
+        return True
+    return suffix.count("(") > suffix.count(")")
+
+
 def extract_dois(text: str) -> List[str]:
     """Extract unique DOIs from text (Unicode dashes normalized first)."""
     matches = DOI_PATTERN.findall(normalize_dashes(text))
@@ -149,12 +169,18 @@ def extract_dois(text: str) -> List[str]:
         if normalized and normalized not in seen:
             seen.add(normalized)
             result.append(normalized)
-    # Drop truncation fragments: a DOI that is a strict prefix of another
-    # extracted DOI is a partial capture (e.g. "10.1016/S0140-6736(20" cut at
-    # a parenthesis, or "10.1038/s41586" cut at a dash) — keep only the full one.
+    # Drop truncation fragments. A partial capture is identified by its own
+    # SHAPE (trailing separator / unbalanced parenthesis), not merely by being
+    # a prefix of another DOI: two legitimately distinct DOIs can stand in a
+    # prefix relationship (e.g. ".../fake.2021.1234" and ".../fake.2021.12345"),
+    # and dropping the shorter one silently skipped verification for it — the
+    # wrong failure direction for an integrity tool, and an evasion vector.
     deduped = [
         d for d in result
-        if not any(other != d and other.startswith(d) for other in result)
+        if not (
+            _is_truncation_fragment(d)
+            and any(other != d and other.startswith(d) for other in result)
+        )
     ]
     return deduped[:settings.MAX_REFERENCES_TO_CHECK]
 
@@ -579,11 +605,25 @@ class ReferenceReport:
     def get_warnings(self) -> List[str]:
         """Generate warnings for invalid references."""
         warnings = []
+        # A DOI that failed lookup but is a strict prefix of one that resolved is
+        # most likely a line-wrapped capture of that longer DOI, not a fabricated
+        # citation. Report it as such rather than as a missing reference — the
+        # entry is still surfaced, never silently discarded.
+        resolved = {d.doi for d in self.dois if d.status == DOIStatus.VALID}
         for d in self.dois:
             if d.status == DOIStatus.INVALID:
                 warnings.append(f"Invalid DOI format: {d.doi}")
             elif d.status == DOIStatus.NOT_FOUND:
-                warnings.append(f"DOI not found in registries: {d.doi}")
+                longer = next(
+                    (r for r in resolved if r != d.doi and r.startswith(d.doi)), None
+                )
+                if longer:
+                    warnings.append(
+                        f"Possible truncated DOI capture: {d.doi} "
+                        f"(prefix of resolved {longer}) - verify manually"
+                    )
+                else:
+                    warnings.append(f"DOI not found in registries: {d.doi}")
             elif d.status == DOIStatus.MISMATCH:
                 warnings.append(f"DOI metadata mismatch: {d.doi} - {d.note}")
         for u in self.urls:
