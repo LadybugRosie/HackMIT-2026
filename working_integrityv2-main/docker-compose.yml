@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - editorrah-network
+
+  backend:
+    build:
+      context: ./integrity-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017}
+      - DB_NAME=${DB_NAME:-editorrah_integrity}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - INTEGRITY_SIGNING_KEY=${INTEGRITY_SIGNING_KEY}
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - editorrah-network
+    volumes:
+      - backend-logs:/app/logs
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=${DB_NAME:-editorrah_integrity}
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+    restart: unless-stopped
+    networks:
+      - editorrah-network
+    command: mongod --auth
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - editorrah-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-change-me}
+
+networks:
+  editorrah-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  mongo-config:
+  redis-data:
+  backend-logs:
+

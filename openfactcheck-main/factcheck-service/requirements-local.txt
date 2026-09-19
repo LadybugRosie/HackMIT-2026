@@ -1,0 +1,20 @@
+# Optional dependencies for local HuggingFace alignment backends.
+# Install only if you set ALIGNMENT_BACKEND=hhem | minicheck | ensemble.
+# Default ALIGNMENT_BACKEND=openai does NOT need any of these.
+#
+#   pip install -r requirements-local.txt
+#
+# Disk impact:
+#   - HHEM-2.1-Open       ~600 MB (Apache-2.0, runs on CPU)
+#   - Bespoke-MiniCheck-7B ~14 GB  (CC-BY-NC-4.0, GPU strongly recommended)
+
+# Core HF stack (needed for both backends)
+transformers>=4.40.0
+torch>=2.0.0
+sentencepiece>=0.1.99
+accelerate>=0.27.0
+einops>=0.7.0
+
+# MiniCheck-specific
+# Bespoke's wrapper around MiniCheck-7B. Pulls in vllm/transformers as deps.
+minicheck @ git+https://github.com/Liyan06/MiniCheck.git

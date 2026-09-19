@@ -1,0 +1,69 @@
+
+import 'tdesign-vue-next/es/style/index.css'
+import './styles/design-tokens.css'
+
+import { createApp } from 'vue'
+import 'katex/dist/katex.min.css'
+import App from './app.vue'
+import shortId from '@/utils/short-id'
+import router from './router'
+import { setupAxiosAuthInterceptor } from '@/utils/axios-auth'
+import { loadFeatureFlags } from '@/composables/feature-flags'
+
+// Security: Send auth tokens via Authorization header instead of URL query params
+setupAxiosAuthInterceptor()
+// Load runtime feature flags (integrity legacy/production-revert switch) early.
+loadFeatureFlags()
+// 插件本地开发
+import { useUmoEditor } from './components'
+// 插件打包测试
+// import UmoEditor from '../dist/umo-editor'
+
+const app = createApp(App)
+
+// @umoteam/editor
+const options = {
+  toolbar: {
+    // defaultMode: 'classic',
+    // menus: ['base'],
+    enableSourceEditor: true,
+  },
+  document: {
+    title: '',
+    content: '',
+  },
+  templates: [],
+  shareUrl: 'https://umodoc.com',
+  onSave(content, page, document) {
+    console.log('onSave', { content, page, document })
+    // Store content in memory instead of localStorage
+    window.editorContentFromDatabase = document.content
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (true) {
+          resolve('操作成功')
+        } else {
+          reject('操作失败')
+        }
+      }, 2000)
+    })
+  },
+
+  async onFileUpload(file) {
+    if (!file) throw new Error('没有找到要上传的文件')
+    console.log('onUpload', file)
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    return {
+      id: shortId(),
+      url: file.url || URL.createObjectURL(file),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }
+  },
+}
+app.use(router)
+app.use(useUmoEditor, options)
+// app.component('UmoEditor', UmoEditor)
+
+app.mount('#app')

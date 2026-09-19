@@ -1,0 +1,38 @@
+# 忽略目录
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+dist/
+imports.d.ts
+vite.config.js.timestamp*
+*.log
+.idea
+
+# Environment and secrets
+.env
+.env.*
+*.env
+.env.backup
+.env.local
+.env.*.local
+env.*.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Backend specific
+integrity-backend/.env
+integrity-backend/.env.*
+integrity-backend/.venv/
+
+# Local-only tooling / scratch (never deploy)
+.claude/
+.waf/
+wii_sparse_oracle.js
+public/showcase.html
+integrity-backend/scripts/seed_localtest*.py
+integrity-backend/scripts/fix_localtest_reports.py

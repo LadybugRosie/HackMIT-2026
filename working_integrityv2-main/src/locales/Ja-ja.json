@@ -1,0 +1,682 @@
+{
+    "toolbar": {
+      "ribbon": "プロフェッショナルツールバー",
+      "classic": "クラシックツールバー",
+      "toggle": "ツールバーを切り替え",
+      "show": "ツールバーを表示",
+      "hide": "ツールバーを非表示",
+      "source": "ソースコードを編集",
+      "base": "開始",
+      "insert": "挿入",
+      "table": "表",
+      "tools": "ツール",
+      "page": "ページ",
+      "export": "エクスポート"
+    },
+    "base": {
+      "align": {
+        "title": "配置",
+        "left": "左揃え",
+        "center": "中央揃え",
+        "right": "右揃え",
+        "justify": "両端揃え",
+        "distributed": "均等割付"
+      },
+      "bgColor": "テキスト背景色",
+      "bold": "太字",
+      "clearFormat": "書式クリア",
+      "code": "コード",
+      "color": "文字色",
+      "fontFamily": {
+        "text": "フォントを選択",
+        "all": "一般的なフォント",
+        "recent": "最近使用したもの",
+        "used": "使用中フォント",
+        "unsupport": "このフォントは未インストールの可能性があり、正しく表示されない場合があります"
+      },
+      "fontSize": {
+        "text": "フォントサイズ",
+        "increase": "フォントを大きく",
+        "decrease": "フォントを小さく",
+        "default": "デフォルト",
+        "42pt": "特大",
+        "36pt": "大",
+        "26pt": "一号",
+        "24pt": "小一号",
+        "22pt": "二号",
+        "18pt": "小二号",
+        "16pt": "三号",
+        "15pt": "小三号",
+        "14pt": "四号",
+        "12pt": "小四号",
+        "10_5pt": "五号",
+        "9pt": "小五号",
+        "7_5pt": "六号",
+        "6_5pt": "既定"
+      },
+      "formatPainter": {
+        "text": "書式コピー",
+        "tip": "ダブルクリックで連続使用、ESCで終了"
+      },
+      "heading": {
+        "text": "見出し {level}",
+        "paragraph": "本文",
+        "tip": "見出しを設定するとアウトラインが自動生成されます"
+      },
+      "highlight": {
+        "text": "ハイライト",
+        "clear": "ハイライト解除",
+        "yellowBg": "黄色背景",
+        "purpleBg": "紫背景",
+        "greenBg": "緑背景",
+        "blueBg": "青背景",
+        "red": "赤文字",
+        "green": "緑文字"
+      },
+      "indent": "インデント追加",
+      "italic": "斜体",
+      "lineHeight": {
+        "text": "行間",
+        "default": " (既定)"
+      },
+      "outdent": "インデント削除",
+      "margin": {
+        "text": "上下余白",
+        "top": "上余白",
+        "bottom": "下余白",
+        "default": "既定",
+        "reset": "自動余白"
+      },
+      "importWord": {
+        "text": "Word をインポート",
+        "loadScript": {
+          "title": "エラー",
+          "message": "変換スクリプトを読み込み中です。後でもう一度お試しください。"
+        },
+        "limitSize": "ファイルサイズは 5MB 以内にしてください。",
+        "converting": "Word を変換中...",
+        "convertError": "Word の解析に失敗しました",
+        "importError": "Word の読み込みに失敗しました"
+      },
+      "markdown": {
+        "text": "Markdown",
+        "enable": "Markdown モードを有効化",
+        "disable": "Markdown モードを無効化",
+        "message": "この操作でエディタがリセットされ履歴が失われます。続行しますか？",
+        "toggle": "今すぐ切り替え"
+      },
+      "quote": "引用",
+      "redo": "やり直し",
+      "selectAll": "すべて選択",
+      "strike": "取り消し線",
+      "subscript": "下付き",
+      "superscript": "上付き",
+      "underline": "下線",
+      "undo": "元に戻す"
+    },
+    "insert": {
+      "audio": "オーディオ",
+      "codeBlock": "コードブロック",
+      "date": "日付",
+      "emoji": "絵文字",
+      "file": "ファイル",
+      "hardBreak": "改行",
+      "hr": {
+        "text": "区切り線",
+        "title": "線種",
+        "color": "線の色",
+        "signle": "細線",
+        "double": "二重細線",
+        "dotted": "点線",
+        "dashed": "破線",
+        "dashedDouble": "二重破線",
+        "signleBold": "太線",
+        "doubleBoldTop": "太‑細線",
+        "doubleBoldBottom": "細‑太線",
+        "wavy": "波線"
+      },
+      "image": "画像",
+      "link": {
+        "text": "リンク",
+        "title": "リンクを挿入",
+        "insert": "挿入",
+        "hrefText": "リンクテキスト：",
+        "hrefTextTip": "リンクテキストを入力または選択",
+        "href": "リンクURL：",
+        "hrefTip": "http:// または https:// で始まる URL を入力"
+      },
+      "math": "数式",
+      "symbol": "特殊文字",
+      "template": "テンプレート",
+      "textBox": "テキストボックス",
+      "toc": "ページ目次",
+      "video": "ビデオ",
+      "web": {
+        "text": "ウェブページ",
+        "insert": "挿入",
+        "title": "ウェブページを挿入",
+        "tip": "一部のページは埋め込みに対応していません。",
+        "placeholder": "http:// または https:// から始まる URL を入力"
+      }
+    },
+    "table": {
+      "addColumnAfter": "列を挿入（右）",
+      "addColumnBefore": "列を挿入（左）",
+      "addRowAfter": "行を挿入（下）",
+      "addRowBefore": "行を挿入（上）",
+      "borderColor": "枠線の色",
+      "cellAlign": {
+        "text": "配置",
+        "tip": "セルの配置",
+        "lt": "左上",
+        "ct": "中央上",
+        "rt": "右上",
+        "jt": "両端上",
+        "lm": "左中央",
+        "cm": "中央",
+        "rm": "右中央",
+        "jm": "両端中央",
+        "lb": "左下",
+        "cb": "中央下",
+        "rb": "右下",
+        "jb": "両端下"
+      },
+      "cellBgColor": {
+        "text": "背景色",
+        "tip": "セル背景色"
+      },
+      "deleteColumn": {
+        "text": "列を削除",
+        "title": "列を削除",
+        "message": "選択した列を削除します。よろしいですか？",
+        "delete": "今すぐ削除",
+        "success": "削除しました"
+      },
+      "deleteRow": {
+        "text": "行を削除",
+        "title": "行を削除",
+        "message": "選択した行を削除します。よろしいですか？",
+        "delete": "今すぐ削除",
+        "success": "削除しました"
+      },
+      "delete": {
+        "text": "表を削除",
+        "title": "表を削除",
+        "message": "選択した表を削除します。よろしいですか？",
+        "delete": "今すぐ削除",
+        "success": "削除しました"
+      },
+      "fix": {
+        "text": "修正",
+        "tip": "表が崩れた場合、自動で修正します"
+      },
+      "insert": {
+        "text": "表を挿入",
+        "tip": "新しい表を挿入",
+        "property": "表の設定",
+        "withHeader": "ヘッダー付き",
+        "rows": "行数:",
+        "cols": "列数:",
+        "create": "表を作成"
+      },
+      "mergeCells": "セルを結合",
+      "nextCell": "次のセル",
+      "prevCell": "前のセル",
+      "splitCell": "セルを分割",
+      "toggleHeaderCell": "ヘッダーセル切替",
+      "toggleHeaderRow": "ヘッダー行切替",
+      "toggleHeaderColumn": "ヘッダー列切替"
+    },
+    "tools": {
+      "barcode": {
+        "text": "バーコード",
+        "edit": "バーコード編集",
+        "title": "バーコード生成",
+        "format": "バーコード規格",
+        "font": "テキストフォント",
+        "lineColor": "バーコードと文字色",
+        "bgColor": "背景色",
+        "more": "詳細",
+        "width": "バー幅：",
+        "height": "バーコード高さ：",
+        "margin": "余白：",
+        "displayValue": "テキスト表示",
+        "displayValueText": "テキストを表示",
+        "textContent": "テキスト内容：",
+        "textContentTip": "入力するとバーコードテキストを上書き",
+        "textPosition": "テキスト位置：",
+        "top": "上",
+        "bottom": "下",
+        "textMargin": "テキスト余白：",
+        "fontSize": "文字サイズ：",
+        "placeholder": "バーコードに変換する内容を入力",
+        "error": "入力内容が規格に合致しない可能性があります。",
+        "preview": "プレビュー",
+        "renderError": "プレビューなし",
+        "notEmpty": "内容を入力してください"
+      },
+      "chineseCase": {
+        "text": "数字形式変換",
+        "tip": "数字と中国語テキスト形式間の変換",
+        "options": {
+          "numberToCurrency": "数字 → 中国通貨",
+          "numberToCurrencyDesc": "人民元五百四十三元二角一分",
+          "arabicToChinese": "アラビア数字 → 中国語小文字",
+          "arabicToChineseDesc": "十万千百十一",
+          "scientificToChinese": "科学記数法 → 中国語小文字",
+          "scientificToChineseDesc": "1.23456789e+21",
+          "currencyToNumber": "中国通貨 → 数字",
+          "currencyToNumberDesc": "￥54,321.00",
+          "chineseToArabic": "中国語小文字 → アラビア数字",
+          "chineseToArabicDesc": "54321"
+        },
+        "conversionFailed": "変換に失敗しました",
+        "conversionError": "ケース変換に失敗しました。現在選択されているテキストを確認してください。"
+      },
+      "diagrams": {
+        "text": "フローチャート",
+        "edit": "フローチャート編集",
+        "loading": "読み込み中..."
+      },
+      "mermaid": {
+        "text": "Mermaid",
+        "edit": "Mermaid編集",
+        "placeholder": "Mermaid コードを入力",
+        "preview": "プレビュー",
+        "notEmpty": "Mermaid 内容は空にできません"
+      },
+      "mindMap": "マインドマップ",
+      "qrcode": {
+        "text": "QRコード",
+        "edit": "QRコード編集",
+        "level": "誤り訂正レベル",
+        "levelL": "低",
+        "levelM": "中",
+        "levelQ": "高",
+        "levelH": "最高",
+        "padding": "余白：",
+        "paddingTip": "QR 周囲の余白",
+        "width": "幅/高さ：",
+        "widthTip": "QRコードサイズ",
+        "color": "QRカラー",
+        "bgColor": "背景色",
+        "placeholder": "QR に変換する内容を入力",
+        "preview": "プレビュー",
+        "renderError": "QRコード生成に失敗しました",
+        "notEmpty": "内容を入力してください"
+      },
+      "seal": {
+        "text": "電子印鑑",
+        "title": "電子印鑑を挿入",
+        "insert": "挿入",
+        "tip": "単色背景の印影画像を選択してください。処理はローカルで行われます。",
+        "insertTip": "ここをクリックして印鑑画像を選択",
+        "converting1": "コンポーネントを読み込み中...",
+        "converting2": "読み込み: {ppercentage}%",
+        "converting3": "切り抜き中...",
+        "convertError": "切り抜きに失敗しました",
+        "notEmpty": "印鑑を選択してください"
+      },
+      "signature": {
+        "text": "電子サイン",
+        "title": "電子サインを挿入",
+        "clear": "キャンバスをクリア",
+        "lineWidth": "ペンの太さ",
+        "tip": "このエリアに署名してください",
+        "notEmpty": "署名が検出されませんでした"
+      }
+    },
+    "page": {
+      "bg": {
+        "text": "ページ背景",
+        "custom": "カスタム背景",
+        "default": "既定",
+        "color1": "目に優しいグリーン",
+        "color2": "淡いイエロー",
+        "color3": "雲水ブルー",
+        "color4": "スカイブルー",
+        "color5": "ナイトブラック"
+      },
+      "break": "改ページ",
+      "footer": {
+        "show": "フッターを表示",
+        "hide": "フッターを非表示"
+      },
+      "header": {
+        "show": "ヘッダーを表示",
+        "hide": "ヘッダーを非表示"
+      },
+      "lineNumber": "行番号を表示",
+      "margin": "余白",
+      "orientation": {
+        "text": "ページ方向",
+        "landscape": "横",
+        "portrait": "縦"
+      },
+      "preview": "プレゼンテーションモード",
+      "size": {
+        "text": "ページサイズ",
+        "cm": "cm",
+        "custom": "カスタム"
+      },
+      "watermark": {
+        "text": "透かし",
+        "fontFamily": "透かしフォント",
+        "fontSize": "透かしサイズ",
+        "fontColor": "透かし色",
+        "content": "透かし内容",
+        "type": "透かしタイプ",
+        "compact": "密",
+        "spacious": "広",
+        "clear": "透かしを削除"
+      }
+    },
+    "export": {
+      "embed": {
+        "text": "埋め込み",
+        "title": "埋め込みコード",
+        "tip": "コピー後、iframe のサイズを調整してください。",
+        "copy": "コピー",
+        "copied": "コードをコピーしました"
+      },
+      "image": {
+        "text": "画像",
+        "jpg": "JPG 形式",
+        "png": "PNG 形式",
+        "error": {
+          "title": "エラー",
+          "message": "画像のエクスポートに失敗しました。再試行してください。"
+        }
+      },
+      "share": {
+        "text": "ドキュメントを共有",
+        "tip": "リンクをコピーして共有してください。",
+        "copy": "リンクをコピー",
+        "copied": "リンクをコピーしました"
+      },
+      "pdf": {
+        "text": "PDF ドキュメント",
+        "title": "PDF をエクスポート",
+        "message": "すべての画像が読み込まれたことを確認してから \"PDF として保存\" を選択してください。",
+        "confirm": "了解"
+      },
+      "text": "テキストドキュメント"
+    },
+    "list": {
+      "bullet": {
+        "text": "箇条書き",
+        "disc": "黒丸",
+        "circle": "白丸",
+        "square": "黒四角"
+      },
+      "ordered": {
+        "text": "番号付きリスト",
+        "property": "リスト設定",
+        "startAt": "開始番号:",
+        "decimal": "数字",
+        "decimalLeadingZero": "0付き数字",
+        "lowerRoman": "小文字ローマ",
+        "upperRoman": "大文字ローマ",
+        "lowerLatin": "小文字ラテン",
+        "upperLatin": "大文字ラテン",
+        "tradChineseInformal": "中国数字",
+        "simpChineseFormal": "大中国数字"
+      },
+      "task": {
+        "text": "タスクリスト",
+        "split": "タスク追加",
+        "sink": "サブタスク化",
+        "lift": "サブタスク解除"
+      }
+    },
+    "colorPicker": {
+      "default": "既定色",
+      "standard": "標準色",
+      "recent": "最近使った色",
+      "more": "その他の色"
+    },
+    "blockMenu": {
+      "insert": "新しい内容を挿入",
+      "select": "ノードを挿入",
+      "template": "テンプレート挿入",
+      "toogleNode": "ノードタイプ切替",
+      "common": "共通操作",
+      "clearFormat": "書式をクリア",
+      "duplicate": "ノードを複製",
+      "copy": "コピー",
+      "cut": "切り取り",
+      "delete": "削除"
+    },
+    "bubbleMenu": {
+      "code": {
+        "copy": {
+          "text": "コードをコピー",
+          "success": "コードをクリップボードにコピーしました"
+        },
+        "languages": "言語一覧",
+        "lineNumbers": "行番号を表示",
+        "themes": {
+          "text": "テーマ",
+          "light": "ライトテーマ",
+          "dark": "ダークテーマ"
+        },
+        "wordWrap": "自動折り返し"
+      },
+      "delete": "削除",
+      "file": {
+        "download": "ファイルをダウンロード"
+      },
+      "image": {
+        "open": "新しいウィンドウで開く",
+        "draggable": "画像を浮動配置",
+        "flipX": "左右反転",
+        "flipY": "上下反転",
+        "preview": "プレビュー",
+        "proportion": "縦横比を固定",
+        "removeBg": "背景を削除",
+        "removingBg": "背景を削除中...",
+        "reset": "リセット",
+        "rotateCC": "左へ 90° 回転",
+        "rotateC": "右へ 90° 回転"
+      }
+    },
+    "assistant": {
+      "text": "AI ドキュメントアシスタント",
+      "placeholder": "コマンドを入力または選択...",
+      "send": "送信",
+      "exit": "アシスタントを終了",
+      "commands": "よく使うコマンド：",
+      "result": "AI 生成結果：",
+      "replace": "元の文と置換",
+      "insertAfter": "後に挿入",
+      "insertBelow": "下に挿入",
+      "copy": "結果をコピー",
+      "copySuccess": "コピーしました",
+      "rewrite": "リライト",
+      "delete": "結果を削除",
+      "error": {
+        "title": "エラー",
+        "message": "AI 生成に失敗しました。再度お試しください！"
+      }
+    },
+    "pageOptions": {
+      "title": "ページ設定",
+      "size": {
+        "text": "ページサイズ",
+        "width": "幅:",
+        "height": "高さ:",
+        "custom": "カスタム"
+      },
+      "margin": {
+        "text": "ページ余白",
+        "default": "既定",
+        "narrow": "狭い",
+        "moderate": "標準",
+        "wide": "広い",
+        "top": "上:",
+        "right": "右:",
+        "bottom": "下:",
+        "left": "左:"
+      }
+    },
+    "source": {
+      "loading": "エディタを読み込み中..."
+    },
+    "document": {
+      "untitled": "無題ドキュメント"
+    },
+    "search": {
+      "text": "検索と置換",
+      "title": "検索と置換",
+      "searchText": "検索文字列",
+      "replaceText": "置換文字列",
+      "caseSensitive": "大文字小文字を区別",
+      "search": "検索",
+      "replace": "置換",
+      "replaceAll": "すべて置換"
+    },
+    "toc": {
+      "title": "ページ目次",
+      "show": "目次を表示",
+      "hide": "目次を非表示",
+      "empty": "目次はありません"
+    },
+    "spellcheck": {
+      "enable": "スペルチェックを有効化",
+      "disable": "スペルチェックを無効化"
+    },
+    "pagination": {
+      "title": "ページ分割モード",
+      "disable": "ページ分割を解除",
+      "toggle": "ダブルクリックで切替"
+    },
+    "shortcut": {
+      "title": "ショートカット一覧",
+      "text": "テキスト",
+      "commonlyUsed": "よく使うショートカット",
+      "copy": "コピー",
+      "paste": "貼り付け",
+      "pasteAsText": "プレーンテキストとして貼り付け",
+      "paragraph": "新しい段落",
+      "hardBreak": "改行",
+      "format": "テキスト書式",
+      "page": "ページ表示",
+      "pageZoomIn": "拡大",
+      "pageZoomOut": "縮小",
+      "pageZoomReset": "100% に戻す",
+      "pageAutoWidth": "最適幅",
+      "markdown": "Markdown 書式"
+    },
+    "changeLocale": {
+      "title": "言語切替",
+      "message": "言語を変更するとページが更新されます。ドキュメントを保存してから続行してください。今すぐ切り替えますか？",
+      "confirm": "今すぐ切替"
+    },
+    "resetAll": {
+      "title": "エディタのリセット",
+      "message": "すべての設定と内容が削除されます。保存してから実行を推奨します。続行しますか？",
+      "reset": "今すぐリセット"
+    },
+    "feedback": "フィードバックと提案",
+    "poweredBy": "技術提供：Umo Editor",
+    "wordCount": {
+      "characters": "文字数",
+      "title": "ドキュメント統計",
+      "input": "入力文字数",
+      "selection": "選択文字数",
+      "limit": "文字数制限",
+      "currentPage": "現在のページ",
+      "totalPage": "総ページ数"
+    },
+    "preview": {
+      "title": "プレゼンモード",
+      "disable": "プレゼンモードを終了",
+      "laserPointer": "レーザーポインター",
+      "exit": "終了"
+    },
+    "fullscreen": {
+      "title": "全画面モード",
+      "disable": "全画面を終了"
+    },
+    "zoom": {
+      "zoomIn": "拡大",
+      "zoomOut": "縮小",
+      "level": "現在のズーム：",
+      "autoWidth": "最適幅",
+      "autoWidthError": "自動幅計算エラー",
+      "reset": "素早く 100%"
+    },
+    "node": {
+      "codeBlock": {
+        "menu": "メニュー"
+      },
+      "image": {
+        "loading": "画像を読み込み中...",
+        "error": "画像読み込みエラー"
+      },
+      "textBox": {
+        "tip": "ダブルクリックで編集"
+      }
+    },
+    "file": {
+      "uploading": "ファイルをアップロード中...",
+      "download": "ダウンロード",
+      "limit": "ファイル「{filename}」のサイズが {size}MB を超えています",
+      "notAllow": {
+        "title": "エラー",
+        "message": "この種類のファイルは挿入できません。"
+      }
+    },
+    "save": {
+      "text": "保存",
+      "saved": "保存済み",
+      "unsaved": "未保存",
+      "network": "ネットワーク：",
+      "online": "オンライン",
+      "offline": "オフライン",
+      "saving": "保存中...",
+      "savedAt": "保存時刻：",
+      "savedAtText": "{time} に保存",
+      "failed": "保存に失敗しました",
+      "success": "保存に成功しました",
+      "error": "保存エラー",
+      "cache": {
+        "text": "キャッシュから復元",
+        "error": {
+          "title": "エラー",
+          "message": "キャッシュにデータがありません！"
+        }
+      }
+    },
+    "print": {
+      "text": "印刷",
+      "title": "ドキュメントを印刷",
+      "message": "すべての画像が読み込まれていることを確認し、印刷画面で \"PDF に保存\" を選択してください。",
+      "confirm": "今すぐ印刷"
+    },
+    "time": {
+      "justNow": "たった今",
+      "past": "{n}前",
+      "yesterday": "昨日",
+      "day": "{n} 日",
+      "hour": "{n} 時間",
+      "minute": "{n} 分",
+      "second": "{n} 秒"
+    },
+    "dialog": {
+      "cancel": "キャンセル"
+    },
+    "templates": {
+      "workTask": {
+        "title": "作業タスク",
+        "description": "作業タスクテンプレート",
+        "content": "<h1>作業タスク</h1><h3>タスク名:</h3><p>[タスクの簡潔な説明]</p><h3>担当者:</h3><p>[タスクを実行する個人の名前]</p><h3>期限:</h3><p>[タスクを完了する必要がある日付]</p><h3>タスクの詳細:</h3><ol><li>[タスクステップ 1]</li><li>[タスクステップ 2]</li><li>[タスクステップ 3]...</li></ol><h3>目標:</h3><p>[タスクが達成する必要がある具体的な目標または成果]</p><h3>備考:</h3><p>[追加情報または考慮事項]</p>"
+      },
+      "weeklyReport": {
+        "title": "週次報告書",
+        "description": "週次報告書テンプレート",
+        "content": "<h1>週次報告書</h1><h2>今週の作業概要</h2><hr /><h3>完了タスク:</h3><ul><li>[タスク名 1]: [タスク内容と完了状況の簡潔な説明]</li><li>[タスク名 2]: [タスク内容と完了状況の簡潔な説明]</li><li>...</li></ul><h3>継続中のタスク:</h3><ul><li>[タスク名 1]: [現在の進捗と次のステップの簡潔な説明]</li><li>[タスク名 2]: [現在の進捗と次のステップの簡潔な説明]</li><li>...</li></ul><h3>課題と障害:</h3><ul><li>[課題 1]: [遭遇した問題の説明と現在の解決策または必要なサポート]</li><li>[課題 2]: [遭遇した問題の説明と現在の解決策または必要なサポート]</li><li>...</li></ul><hr /><h2>来週の作業計画</h2><h3>予定タスク:</h3><ul><li>[タスク名 1]: [来週予定されているタスク内容の簡潔な説明]</li><li>[タスク名 2]: [来週予定されているタスク内容の簡潔な説明]</li><li>...</li></ul><h3>必要なサポートとリソース:</h3><ul><li>[リソース 1]: [必要なリソースまたはサポートの説明]</li><li>[リソース 2]: [必要なリソースまたはサポートの説明]</li><li>...</li></ul>"
+      }
+    }
+  }
+  

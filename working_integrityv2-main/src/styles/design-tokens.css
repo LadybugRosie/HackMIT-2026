@@ -1,0 +1,314 @@
+/**
+ * Design Tokens
+ * Premium design system for Editorrah
+ */
+
+:root {
+  /* ===== Colors ===== */
+  
+  /* Primary */
+  --color-primary-50: #e8f0fe;
+  --color-primary-100: #c6dafc;
+  --color-primary-200: #a1c3fa;
+  --color-primary-300: #7cacf8;
+  --color-primary-400: #5f9af6;
+  --color-primary-500: #4285f4;
+  --color-primary-600: #1a73e8;
+  --color-primary-700: #1557b0;
+  --color-primary-800: #104080;
+  --color-primary-900: #0d3055;
+  
+  /* Success */
+  --color-success-50: #e6f4ea;
+  --color-success-100: #ceead6;
+  --color-success-500: #34a853;
+  --color-success-600: #1e8e3e;
+  --color-success-700: #137333;
+  
+  /* Warning */
+  --color-warning-50: #fef7e0;
+  --color-warning-100: #feefc3;
+  --color-warning-500: #fbbc04;
+  --color-warning-600: #f9ab00;
+  --color-warning-700: #e37400;
+  
+  /* Danger */
+  --color-danger-50: #fce8e6;
+  --color-danger-100: #f9d8d6;
+  --color-danger-500: #ea4335;
+  --color-danger-600: #d93025;
+  --color-danger-700: #c5221f;
+  
+  /* Neutral */
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #f1f3f4;
+  --color-neutral-200: #e8eaed;
+  --color-neutral-300: #dadce0;
+  --color-neutral-400: #bdc1c6;
+  --color-neutral-500: #9aa0a6;
+  --color-neutral-600: #80868b;
+  --color-neutral-700: #5f6368;
+  --color-neutral-800: #3c4043;
+  --color-neutral-900: #202124;
+  
+  /* ===== Typography ===== */
+  
+  --font-family-primary: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'Roboto Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+  
+  /* Font sizes */
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+  
+  /* Line heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Font weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* ===== Spacing ===== */
+  
+  --spacing-0: 0;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  
+  /* ===== Border Radius ===== */
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+  
+  /* ===== Shadows ===== */
+  
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  
+  /* Colored shadows */
+  --shadow-primary: 0 4px 14px rgba(26, 115, 232, 0.3);
+  --shadow-success: 0 4px 14px rgba(52, 168, 83, 0.3);
+  --shadow-danger: 0 4px 14px rgba(234, 67, 53, 0.3);
+  
+  /* ===== Transitions ===== */
+  
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ===== Z-Index ===== */
+  
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  
+  /* ===== Breakpoints (for reference) ===== */
+  /* sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
+}
+
+/* ===== Dark Mode Support ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-neutral-0: #202124;
+    --color-neutral-50: #292a2d;
+    --color-neutral-100: #35363a;
+    --color-neutral-200: #3c4043;
+    --color-neutral-300: #5f6368;
+    --color-neutral-400: #80868b;
+    --color-neutral-500: #9aa0a6;
+    --color-neutral-600: #bdc1c6;
+    --color-neutral-700: #dadce0;
+    --color-neutral-800: #e8eaed;
+    --color-neutral-900: #f8f9fa;
+  }
+}
+
+/* ===== Global Resets ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: #202124;
+  background: #f8f9fa;
+}
+
+/* Override TDesign dark mode leaking into non-editor pages */
+body:not([theme-mode="dark"]) {
+  --td-text-color-primary: #202124;
+  --td-text-color-secondary: #5f6368;
+}
+
+/* Force dark text on form elements regardless of theme mode.
+   TDesign dark mode (activated by UMO editor) can flip CSS variables
+   making text white on white backgrounds. Use hardcoded colors. */
+input, textarea, select {
+  color: #202124 !important;
+  background-color: #fff;
+}
+input::placeholder, textarea::placeholder {
+  color: #80868b !important;
+}
+
+/* ===== Utility Classes ===== */
+
+/* Text */
+.text-primary { color: var(--color-primary-600); }
+.text-success { color: var(--color-success-600); }
+.text-warning { color: var(--color-warning-600); }
+.text-danger { color: var(--color-danger-600); }
+.text-muted { color: var(--color-neutral-500); }
+
+/* Backgrounds */
+.bg-primary { background-color: var(--color-primary-600); }
+.bg-success { background-color: var(--color-success-600); }
+.bg-warning { background-color: var(--color-warning-600); }
+.bg-danger { background-color: var(--color-danger-600); }
+
+/* Gradients */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+}
+
+.gradient-premium {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-ocean {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fadeIn { animation: fadeIn 0.3s ease; }
+.animate-slideUp { animation: slideUp 0.3s ease; }
+.animate-slideDown { animation: slideDown 0.3s ease; }
+.animate-scaleIn { animation: scaleIn 0.3s ease; }
+.animate-pulse { animation: pulse 2s infinite; }
+
+/* Focus ring */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+}

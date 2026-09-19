@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+redis
+celery
+prometheus-client
+pydantic-settings
+httpx
+python-json-logger
+openai>=1.0.0

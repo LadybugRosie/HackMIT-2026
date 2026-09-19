@@ -1,0 +1,14 @@
+# robots.txt for Editorrah
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://editorrah.com/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1
+
+<!-- Force rebuild 1768386564 -->
+<!-- Force rebuild 1768394803 -->

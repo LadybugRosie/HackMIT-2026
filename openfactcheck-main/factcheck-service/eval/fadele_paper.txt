@@ -1,0 +1,28 @@
+In Computer programming (: general Computer Science), it is said that most problems reduce to problems of searching and sorting (Syracuse U, ECE 382). In Artificial Intelligence, when a computational agent has a perfect model of its world, its problem of reasoning about it's abilities and choosing actions to achieve a goal can be abstractly modelled as the mathematical/computer science problem of searching a directed graph.
+
+Poole D. L. and co - author (2023) demonstrate that the number of paths expanded on a depth - first search at depth k is of order: O(b^k), assuming a fixed b, with b > 1.
+
+Relative to the analysis presented in Poole D. L. and co - author (2023), for our purposes, we need to develop the foundations of our analysis more carefully. We posit a sequence of N identical tasks. As the N tasks are identical, the N goal nodes in each task reside at the end of the same path each time, i.e., at the same depth of search in a Depth - first search or an iterative deepening search, but the computational agent has no apriori information about which path leads from the start node to the goal node.
+
+Given an infinite graph in which the fixed goal is located at depth k but whose location is apriori unknown, the number of paths expanded at depth k on an iterative deepening search is approximately b^k(b/(b-1))^2 for large k. By the limit law of McConnell, T. (1988), Lim(n->infinity)(An * Cn) = (Lim(n->infinity) An) * (Lim(n->infinity) Cn).
+
+We collect this development and our result in Theorem 1: Given a sequence of N identical tasks, for an uninformed search, a randomized search strategy that alternatively does a depth-first search with probability p for one task followed by an iterative deepening search with probability 1 - p for the next is always superior in expected worst-case time complexity to an iterative deepening search strategy and the efficiency improvement is increasing in N. This contradicts the statement in Poole D. L. and co - author (2023) that, in an uninformed search, we cannot improve upon an iterative deepening search.
+
+Theorem 2: In an informed search, the randomized search strategy described in Theorem 1 - employed together with a Branch and bound strategy - can retain the completeness and space efficiency of Branch and bound with iterative deepening, whilst improving the latter strategy's expected average case time complexity.
+
+We fix a bar of finite length, L. A depth first un-informed search strategy here corresponds to identifying a bar segment and searching smaller and smaller sub-divisions of it. Theorem 3a, b: Randomizing the step-size, in step-size-based Search Algorithms applicable to iterative Numerical methods such as in Fadele (2024).
+
+References
+
+Fadele (2024), "Modernizing" Numerical methods/Algorithms III: On the efficiency gains from randomizing the SOR iterative method of solving a linear system of equations and other iterative Numerical methods, Researchgate.
+Gensemer Susan (1988), Syracuse U, lecture notes on the Foundations of Econometrics (Probability and Statistics).
+Goodrich and Tamassia (2011), Data Structures and Algorithms in C++, John Wiley & Sons Ltd, USA.
+McConnell Terry (Fall 1988), Syracuse U Lecture notes on (MAT 512) 'Introduction to Real Analysis'.
+Paul R. P. (1981), Robot Manipulators: mathematics, programming, control, The MIT Press series in Artificial Intelligence, USA.
+Poole D. L. and co - author (2023), Artificial Intelligence: foundations of computational agents, Cambridge U Press UK.
+Wirth (1975), Algorithms + Data Structures = Programs, Prentice Hall, USA.
+De la Fuente (2000), Mathematical methods and models for Economists, Cambridge University Press, UK.
+Rudin (1976), Principles of Mathematical Analysis.
+Bjork (2009), Arbitrage Theory in Continuous - time.
+Wilmott, Howison & Dewynne (1995), The mathematics of Financial Derivatives: a student introduction.
+Kreyszig (2008), Advanced Engineering Mathematics.

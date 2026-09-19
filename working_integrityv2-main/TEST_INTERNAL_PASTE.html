@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>✅ Internal vs External Paste Detection Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .feature-box {
+            background: #f0f8ff;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .success { color: #4CAF50; font-weight: bold; }
+        .warning { color: #FF9800; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .internal-label {
+            background: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .external-label {
+            background: #f44336;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Internal vs External Paste Detection</h1>
+            <p>The system now differentiates between your own content (internal) and external content!</p>
+            
+            <div class="feature-box">
+                <h3>✅ NEW FEATURES:</h3>
+                <ul>
+                    <li><strong>Internal Paste Detection:</strong> When you copy/cut YOUR OWN typed content and paste it back</li>
+                    <li><strong>External Paste Detection:</strong> When you paste from ChatGPT, websites, or other sources</li>
+                    <li><strong>Smart Trust Scoring:</strong> Internal pastes DON'T reduce trust score (it's your own work!)</li>
+                    <li><strong>Persistent Scores:</strong> Scores stay visible until you click "Analyze" again</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Scenario 1: Internal Paste (Your Own Work)</h2>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Open UMO Editor</strong>
+                <p><a href="http://localhost:9000/?session=internal-test" target="_blank" class="btn">🚀 Launch Editor</a></p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Type Your Own Content</strong>
+                <p>Type this in the editor:</p>
+                <div class="code">My name is Rahul and I am testing the integrity system.</div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Cut and Paste Your Own Text</strong>
+                <p>Select "My name is Rahul", cut it (Cmd+X), then paste it back (Cmd+V)</p>
+                <p>Console will show:</p>
+                <div class="code">
+<span class="success">✂️ CUT CAPTURED (User's own content): My name is Rahul</span>
+<span class="success">✅ INTERNAL PASTE STORED (User's own content)!</span>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Click "Analyze Integrity Now"</strong>
+                <p>Result:</p>
+                <div class="code">
+<span class="success">✅ INTERNAL paste in doc (user's own): My name is Rahul</span>
+<span class="success">🎯 TRUST SCORE: 100%</span>
+<span class="success">Note: Internal pastes (user's own content) do NOT reduce trust score!</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Scenario 2: External Paste (Outside Source)</h2>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Copy External Content</strong>
+                <p>Copy this text (from this webpage, not the editor):</p>
+                <div class="code">The Earth is the third planet from the Sun.</div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Paste into Editor</strong>
+                <p>Paste it into the UMO editor. Console will show:</p>
+                <div class="code">
+<span class="error">❌ EXTERNAL PASTE STORED (Outside content)!</span>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Click "Analyze Integrity Now"</strong>
+                <p>Result:</p>
+                <div class="code">
+<span class="error">❌ EXTERNAL paste still in doc: The Earth is the third planet</span>
+<span class="warning">🎯 TRUST SCORE: 50% (external content detected)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 How The System Differentiates</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Detection Method</th>
+                        <th>Classification</th>
+                        <th>Trust Score Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Type "Hello World"</td>
+                        <td>Tracked via keydown events</td>
+                        <td><span class="internal-label">TYPED</span></td>
+                        <td class="success">No impact (100%)</td>
+                    </tr>
+                    <tr>
+                        <td>Copy "Hello World" from editor</td>
+                        <td>Copy event captured, stored in buffer</td>
+                        <td>—</td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>Paste "Hello World" back</td>
+                        <td>Matches copy buffer → Internal</td>
+                        <td><span class="internal-label">INTERNAL</span></td>
+                        <td class="success">No impact (your work)</td>
+                    </tr>
+                    <tr>
+                        <td>Paste from ChatGPT</td>
+                        <td>Not in copy buffer → External</td>
+                        <td><span class="external-label">EXTERNAL</span></td>
+                        <td class="error">Reduces trust score</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 The Algorithm</h2>
+            
+            <div class="code">
+// When paste event occurs:
+function handlePaste(pastedText) {
+  // Check 1: Is it in our copy buffer? (recently copied from editor)
+  if (copyBuffer.contains(pastedText)) {
+    → INTERNAL PASTE (user's own work)
+  }
+  
+  // Check 2: Does it match previously typed content?
+  else if (typedHistory.contains(pastedText)) {
+    → INTERNAL PASTE (user typed this before)
+  }
+  
+  // Check 3: 70%+ word overlap with typed content?
+  else if (wordOverlap(pastedText, typedHistory) > 0.7) {
+    → INTERNAL PASTE (mostly user's words)
+  }
+  
+  else {
+    → EXTERNAL PASTE (from outside source)
+  }
+}
+
+// Trust Score Calculation:
+Trust Score = (Typed + Internal) / Total × 100
+// Internal pastes DON'T hurt the score!
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ What's Fixed</h2>
+            
+            <div class="feature-box">
+                <h3>Issue 1: Internal Paste Detection ✅ FIXED</h3>
+                <p>The system now:</p>
+                <ul>
+                    <li>Tracks everything you type in real-time</li>
+                    <li>Maintains a copy buffer of your recent copies/cuts</li>
+                    <li>Correctly identifies when you paste your own content</li>
+                    <li>Doesn't penalize you for reorganizing your own work</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h3>Issue 2: Score Persistence ✅ FIXED</h3>
+                <p>The scores now:</p>
+                <ul>
+                    <li>Stay visible after analysis</li>
+                    <li>Don't reset automatically</li>
+                    <li>Only update when you click "Analyze Integrity Now"</li>
+                    <li>Show "Last analyzed: X seconds ago" timestamp</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Console Commands for Testing</h2>
+            
+            <div class="code">
+// Check the complete database
+console.log(window.INTEGRITY_DATABASE)
+
+// See internal vs external pastes
+console.log('Internal pastes:', window.INTEGRITY_DATABASE.internalPastes)
+console.log('External pastes:', window.INTEGRITY_DATABASE.externalPastes)
+
+// See everything you've typed
+console.log('Typed content:', window.INTEGRITY_DATABASE.allKeystrokes)
+
+// See copy buffer (your recent copies)
+console.log('Copy buffer:', window.INTEGRITY_DATABASE.copyBuffer)
+
+// Manually trigger analysis
+await window.analyzeIntegrityNow()
+            </div>
+        </div>
+    </div>
+</body>
+</html>

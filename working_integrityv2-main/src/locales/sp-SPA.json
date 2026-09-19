@@ -1,0 +1,682 @@
+{
+    "toolbar": {
+      "ribbon": "Barra de herramientas profesional",
+      "classic": "Barra de herramientas clásica",
+      "toggle": "Alternar barra de herramientas",
+      "show": "Mostrar barra de herramientas",
+      "hide": "Ocultar barra de herramientas",
+      "source": "Editar código fuente",
+      "base": "Inicio",
+      "insert": "Insertar",
+      "table": "Tabla",
+      "tools": "Herramientas",
+      "page": "Página",
+      "export": "Exportar"
+    },
+    "base": {
+      "align": {
+        "title": "Alineación",
+        "left": "Alinear a la izquierda",
+        "center": "Centrar",
+        "right": "Alinear a la derecha",
+        "justify": "Justificar",
+        "distributed": "Distribuido"
+      },
+      "bgColor": "Color de fondo del texto",
+      "bold": "Negrita",
+      "clearFormat": "Borrar formato",
+      "code": "Código",
+      "color": "Color de texto",
+      "fontFamily": {
+        "text": "Seleccionar fuente",
+        "all": "Fuentes comunes",
+        "recent": "Recientes",
+        "used": "Fuentes usadas",
+        "unsupport": "Es posible que la fuente no esté instalada y no se muestre correctamente"
+      },
+      "fontSize": {
+        "text": "Tamaño de fuente",
+        "increase": "Aumentar tamaño",
+        "decrease": "Disminuir tamaño",
+        "default": "Predeterminado",
+        "42pt": "Extra grande",
+        "36pt": "Muy grande",
+        "26pt": "Título 1",
+        "24pt": "Título 1 pequeño",
+        "22pt": "Título 2",
+        "18pt": "Título 2 pequeño",
+        "16pt": "Título 3",
+        "15pt": "Título 3 pequeño",
+        "14pt": "Título 4",
+        "12pt": "Título 4 pequeño",
+        "10_5pt": "Título 5",
+        "9pt": "Título 5 pequeño",
+        "7_5pt": "Título 6",
+        "6_5pt": "Predeterminado"
+      },
+      "formatPainter": {
+        "text": "Copiar formato",
+        "tip": "Doble clic para uso continuo, presione ESC para salir"
+      },
+      "heading": {
+        "text": "Encabezado {level}",
+        "paragraph": "Párrafo",
+        "tip": "Asignar encabezado para generar el esquema automáticamente"
+      },
+      "highlight": {
+        "text": "Resaltar",
+        "clear": "Quitar resaltado",
+        "yellowBg": "Fondo amarillo",
+        "purpleBg": "Fondo morado",
+        "greenBg": "Fondo verde",
+        "blueBg": "Fondo azul",
+        "red": "Texto rojo",
+        "green": "Texto verde"
+      },
+      "indent": "Aumentar sangría",
+      "italic": "Cursiva",
+      "lineHeight": {
+        "text": "Interlineado",
+        "default": " (Predeterminado)"
+      },
+      "outdent": "Disminuir sangría",
+      "margin": {
+        "text": "Espaciado superior/inferior",
+        "top": "Espacio superior",
+        "bottom": "Espacio inferior",
+        "default": "Predeterminado",
+        "reset": "Espacio automático"
+      },
+      "importWord": {
+        "text": "Importar Word",
+        "loadScript": {
+          "title": "Error",
+          "message": "Cargando script de conversión, inténtelo de nuevo."
+        },
+        "limitSize": "El archivo no puede superar los 5 MB.",
+        "converting": "Convirtiendo documento de Word...",
+        "convertError": "Error al analizar Word",
+        "importError": "Error al importar Word"
+      },
+      "markdown": {
+        "text": "Markdown",
+        "enable": "Activar modo Markdown",
+        "disable": "Desactivar modo Markdown",
+        "message": "Esta acción reiniciará el editor y se perderá el historial. ¿Continuar?",
+        "toggle": "Cambiar ahora"
+      },
+      "quote": "Cita",
+      "redo": "Rehacer",
+      "selectAll": "Seleccionar todo",
+      "strike": "Tachado",
+      "subscript": "Subíndice",
+      "superscript": "Superíndice",
+      "underline": "Subrayado",
+      "undo": "Deshacer"
+    },
+    "insert": {
+      "audio": "Audio",
+      "codeBlock": "Bloque de código",
+      "date": "Fecha",
+      "emoji": "Emoji",
+      "file": "Archivo",
+      "hardBreak": "Salto de línea",
+      "hr": {
+        "text": "Línea divisoria",
+        "title": "Tipo de línea",
+        "color": "Color de línea",
+        "signle": "Línea fina",
+        "double": "Doble línea fina",
+        "dotted": "Punteada",
+        "dashed": "Guiones",
+        "dashedDouble": "Guiones dobles",
+        "signleBold": "Línea gruesa",
+        "doubleBoldTop": "Gruesa-fina",
+        "doubleBoldBottom": "Fina-gruesa",
+        "wavy": "Ondulada"
+      },
+      "image": "Imagen",
+      "link": {
+        "text": "Enlace",
+        "title": "Insertar enlace",
+        "insert": "Insertar",
+        "hrefText": "Texto del enlace:",
+        "hrefTextTip": "Introduzca o seleccione el texto del enlace",
+        "href": "URL del enlace:",
+        "hrefTip": "Introduzca una URL que empiece por http:// o https://"
+      },
+      "math": "Fórmula",
+      "symbol": "Símbolo especial",
+      "template": "Plantilla",
+      "textBox": "Caja de texto",
+      "toc": "Esquema de página",
+      "video": "Vídeo",
+      "web": {
+        "text": "Página web",
+        "insert": "Insertar",
+        "title": "Insertar página web",
+        "tip": "Algunas páginas no permiten incrustar.",
+        "placeholder": "Introduzca una URL que comience con http:// o https://"
+      }
+    },
+    "table": {
+      "addColumnAfter": "Insertar columna (derecha)",
+      "addColumnBefore": "Insertar columna (izquierda)",
+      "addRowAfter": "Insertar fila (abajo)",
+      "addRowBefore": "Insertar fila (arriba)",
+      "borderColor": "Color del borde",
+      "cellAlign": {
+        "text": "Alineación",
+        "tip": "Alineación de celda",
+        "lt": "Arriba izquierda",
+        "ct": "Arriba centro",
+        "rt": "Arriba derecha",
+        "jt": "Arriba justificar",
+        "lm": "Centro izquierda",
+        "cm": "Centro",
+        "rm": "Centro derecha",
+        "jm": "Centro justificar",
+        "lb": "Abajo izquierda",
+        "cb": "Abajo centro",
+        "rb": "Abajo derecha",
+        "jb": "Abajo justificar"
+      },
+      "cellBgColor": {
+        "text": "Color de fondo",
+        "tip": "Color de fondo de celda"
+      },
+      "deleteColumn": {
+        "text": "Eliminar columna",
+        "title": "Eliminar columna",
+        "message": "Se eliminará la columna seleccionada, ¿continuar?",
+        "delete": "Eliminar ahora",
+        "success": "Columna eliminada"
+      },
+      "deleteRow": {
+        "text": "Eliminar fila",
+        "title": "Eliminar fila",
+        "message": "Se eliminará la fila seleccionada, ¿continuar?",
+        "delete": "Eliminar ahora",
+        "success": "Fila eliminada"
+      },
+      "delete": {
+        "text": "Eliminar tabla",
+        "title": "Eliminar tabla",
+        "message": "Se eliminará la tabla seleccionada, ¿continuar?",
+        "delete": "Eliminar ahora",
+        "success": "Tabla eliminada"
+      },
+      "fix": {
+        "text": "Reparar",
+        "tip": "Corrija automáticamente si la tabla está dañada"
+      },
+      "insert": {
+        "text": "Insertar tabla",
+        "tip": "Inserta una nueva tabla",
+        "property": "Propiedades de tabla",
+        "withHeader": "Con encabezado",
+        "rows": "Filas:",
+        "cols": "Columnas:",
+        "create": "Crear tabla"
+      },
+      "mergeCells": "Combinar celdas",
+      "nextCell": "Siguiente celda",
+      "prevCell": "Celda anterior",
+      "splitCell": "Dividir celda",
+      "toggleHeaderCell": "Alternar celda de encabezado",
+      "toggleHeaderRow": "Alternar fila de encabezado",
+      "toggleHeaderColumn": "Alternar columna de encabezado"
+    },
+    "tools": {
+      "barcode": {
+        "text": "Código de barras",
+        "edit": "Editar código de barras",
+        "title": "Generador de código de barras",
+        "format": "Formato",
+        "font": "Fuente del texto",
+        "lineColor": "Color de las barras y texto",
+        "bgColor": "Color de fondo",
+        "more": "Más",
+        "width": "Ancho de barra:",
+        "height": "Alto del código:",
+        "margin": "Margen:",
+        "displayValue": "Mostrar texto",
+        "displayValueText": "Mostrar texto",
+        "textContent": "Contenido de texto:",
+        "textContentTip": "Sobrescribe el texto del código",
+        "textPosition": "Posición del texto:",
+        "top": "Arriba",
+        "bottom": "Abajo",
+        "textMargin": "Espacio del texto:",
+        "fontSize": "Tamaño del texto:",
+        "placeholder": "Introduzca contenido para el código de barras",
+        "error": "El contenido puede no ajustarse al formato seleccionado.",
+        "preview": "Previsualizar",
+        "renderError": "Sin previsualización",
+        "notEmpty": "El contenido no puede estar vacío"
+      },
+      "chineseCase": {
+        "text": "Conversión de números",
+        "tip": "Convertir entre números y formato de texto chino",
+        "options": {
+          "numberToCurrency": "Número → Moneda China",
+          "numberToCurrencyDesc": "RMB Quinientos Cuarenta y Tres Yuan Dos Jiao Un Fen",
+          "arabicToChinese": "Número Arábigo → Chino Minúscula",
+          "arabicToChineseDesc": "Cien mil ciento once",
+          "scientificToChinese": "Notación Científica → Chino Minúscula",
+          "scientificToChineseDesc": "1.23456789e+21",
+          "currencyToNumber": "Moneda China → Número",
+          "currencyToNumberDesc": "￥54,321.00",
+          "chineseToArabic": "Chino Minúscula → Número Arábigo",
+          "chineseToArabicDesc": "54321"
+        },
+        "conversionFailed": "Conversión fallida",
+        "conversionError": "La conversión de formato falló, por favor verifique el texto seleccionado actualmente."
+      },
+      "diagrams": {
+        "text": "Diagrama de flujo",
+        "edit": "Editar diagrama",
+        "loading": "Cargando..."
+      },
+      "mermaid": {
+        "text": "Mermaid",
+        "edit": "Editar Mermaid",
+        "placeholder": "Introduzca código Mermaid",
+        "preview": "Previsualizar",
+        "notEmpty": "El contenido Mermaid no puede estar vacío"
+      },
+      "mindMap": "Mapa mental",
+      "qrcode": {
+        "text": "Código QR",
+        "edit": "Editar QR",
+        "level": "Nivel de corrección",
+        "levelL": "Bajo",
+        "levelM": "Medio",
+        "levelQ": "Alto",
+        "levelH": "Máximo",
+        "padding": "Margen:",
+        "paddingTip": "Espacio alrededor del QR",
+        "width": "Ancho/alto:",
+        "widthTip": "Tamaño del QR",
+        "color": "Color del QR",
+        "bgColor": "Color de fondo",
+        "placeholder": "Introduzca contenido para el QR",
+        "preview": "Previsualizar",
+        "renderError": "Error al generar QR",
+        "notEmpty": "El contenido no puede estar vacío"
+      },
+      "seal": {
+        "text": "Sello electrónico",
+        "title": "Insertar sello electrónico",
+        "insert": "Insertar",
+        "tip": "Seleccione una imagen de sello de fondo sólido; todo se procesa localmente.",
+        "insertTip": "Click para seleccionar sello",
+        "converting1": "Cargando componente...",
+        "converting2": "Cargando componente: {ppercentage}%",
+        "converting3": "Procesando sello...",
+        "convertError": "Error al procesar sello",
+        "notEmpty": "Seleccione un sello"
+      },
+      "signature": {
+        "text": "Firma electrónica",
+        "title": "Insertar firma",
+        "clear": "Limpiar lienzo",
+        "lineWidth": "Grosor del pincel",
+        "tip": "Firme en esta área",
+        "notEmpty": "No se detectó firma"
+      }
+    },
+    "page": {
+      "bg": {
+        "text": "Fondo de página",
+        "custom": "Fondo personalizado",
+        "default": "Predeterminado",
+        "color1": "Verde suave",
+        "color2": "Amarillo claro",
+        "color3": "Azul cielo nublado",
+        "color4": "Azul cielo",
+        "color5": "Negro noche"
+      },
+      "break": "Salto de página",
+      "footer": {
+        "show": "Mostrar pie de página",
+        "hide": "Ocultar pie de página"
+      },
+      "header": {
+        "show": "Mostrar encabezado",
+        "hide": "Ocultar encabezado"
+      },
+      "lineNumber": "Mostrar números de línea",
+      "margin": "Márgenes",
+      "orientation": {
+        "text": "Orientación",
+        "landscape": "Horizontal",
+        "portrait": "Vertical"
+      },
+      "preview": "Modo presentación",
+      "size": {
+        "text": "Tamaño de página",
+        "cm": "cm",
+        "custom": "Personalizado"
+      },
+      "watermark": {
+        "text": "Marca de agua",
+        "fontFamily": "Fuente",
+        "fontSize": "Tamaño",
+        "fontColor": "Color",
+        "content": "Texto de marca",
+        "type": "Tipo",
+        "compact": "Compacta",
+        "spacious": "Espaciosa",
+        "clear": "Quitar marca"
+      }
+    },
+    "export": {
+      "embed": {
+        "text": "Incrustar",
+        "title": "Código de incrustación",
+        "tip": "Ajuste ancho y alto del iframe tras copiar.",
+        "copy": "Copiar",
+        "copied": "Código copiado"
+      },
+      "image": {
+        "text": "Imagen",
+        "jpg": "Formato JPG",
+        "png": "Formato PNG",
+        "error": {
+          "title": "Error",
+          "message": "Error al exportar imagen, intente de nuevo."
+        }
+      },
+      "share": {
+        "text": "Compartir documento",
+        "tip": "Copie el enlace y compártalo.",
+        "copy": "Copiar enlace",
+        "copied": "Enlace copiado"
+      },
+      "pdf": {
+        "text": "Documento PDF",
+        "title": "Exportar PDF",
+        "message": "Asegúrese de que todas las imágenes estén cargadas y luego elija \"Guardar como PDF\".",
+        "confirm": "Entendido"
+      },
+      "text": "Documento de texto"
+    },
+    "list": {
+      "bullet": {
+        "text": "Lista sin orden",
+        "disc": "Punto sólido",
+        "circle": "Punto hueco",
+        "square": "Cuadro sólido"
+      },
+      "ordered": {
+        "text": "Lista ordenada",
+        "property": "Propiedades de lista",
+        "startAt": "Comenzar en:",
+        "decimal": "Números",
+        "decimalLeadingZero": "Números con 0",
+        "lowerRoman": "Romano minúsc.",
+        "upperRoman": "Romano mayúsc.",
+        "lowerLatin": "Latín minúsc.",
+        "upperLatin": "Latín mayúsc.",
+        "tradChineseInformal": "Números chinos",
+        "simpChineseFormal": "Números chinos grandes"
+      },
+      "task": {
+        "text": "Lista de tareas",
+        "split": "Agregar tarea",
+        "sink": "Hacer subtarea",
+        "lift": "Quitar subtarea"
+      }
+    },
+    "colorPicker": {
+      "default": "Color predeterminado",
+      "standard": "Colores estándar",
+      "recent": "Recientes",
+      "more": "Más colores"
+    },
+    "blockMenu": {
+      "insert": "Insertar nuevo contenido",
+      "select": "Insertar nodo",
+      "template": "Insertar plantilla",
+      "toogleNode": "Cambiar tipo de nodo",
+      "common": "Acciones comunes",
+      "clearFormat": "Borrar formato",
+      "duplicate": "Duplicar nodo",
+      "copy": "Copiar",
+      "cut": "Cortar",
+      "delete": "Eliminar"
+    },
+    "bubbleMenu": {
+      "code": {
+        "copy": {
+          "text": "Copiar código",
+          "success": "Código copiado al portapapeles"
+        },
+        "languages": "Lenguajes",
+        "lineNumbers": "Mostrar líneas",
+        "themes": {
+          "text": "Tema",
+          "light": "Tema claro",
+          "dark": "Tema oscuro"
+        },
+        "wordWrap": "Ajuste de línea"
+      },
+      "delete": "Eliminar",
+      "file": {
+        "download": "Descargar archivo"
+      },
+      "image": {
+        "open": "Abrir en nueva ventana",
+        "draggable": "Imagen flotante",
+        "flipX": "Voltear horizontal",
+        "flipY": "Voltear vertical",
+        "preview": "Vista previa",
+        "proportion": "Bloquear proporción",
+        "removeBg": "Quitar fondo",
+        "removingBg": "Quitando fondo...",
+        "reset": "Restablecer",
+        "rotateCC": "Girar 90° izq.",
+        "rotateC": "Girar 90° der."
+      }
+    },
+    "assistant": {
+      "text": "Asistente AI de documentos",
+      "placeholder": "Escriba o seleccione comando...",
+      "send": "Enviar",
+      "exit": "Salir del asistente",
+      "commands": "Comandos comunes:",
+      "result": "Resultado AI:",
+      "replace": "Reemplazar original",
+      "insertAfter": "Insertar después",
+      "insertBelow": "Insertar debajo",
+      "copy": "Copiar resultado",
+      "copySuccess": "Resultado copiado",
+      "rewrite": "Reescribir",
+      "delete": "Eliminar resultado",
+      "error": {
+        "title": "Error",
+        "message": "Error al generar resultado, vuelva a intentar."
+      }
+    },
+    "pageOptions": {
+      "title": "Configuración de página",
+      "size": {
+        "text": "Tamaño de página",
+        "width": "Ancho:",
+        "height": "Alto:",
+        "custom": "Personalizado"
+      },
+      "margin": {
+        "text": "Márgenes",
+        "default": "Predeterminado",
+        "narrow": "Estrecho",
+        "moderate": "Moderado",
+        "wide": "Ancho",
+        "top": "Superior:",
+        "right": "Derecho:",
+        "bottom": "Inferior:",
+        "left": "Izquierdo:"
+      }
+    },
+    "source": {
+      "loading": "Cargando editor..."
+    },
+    "document": {
+      "untitled": "Documento sin título"
+    },
+    "search": {
+      "text": "Buscar y reemplazar",
+      "title": "Buscar y reemplazar",
+      "searchText": "Texto a buscar",
+      "replaceText": "Texto de reemplazo",
+      "caseSensitive": "Distinguir mayúsculas",
+      "search": "Buscar",
+      "replace": "Reemplazar",
+      "replaceAll": "Reemplazar todo"
+    },
+    "toc": {
+      "title": "Esquema de página",
+      "show": "Mostrar esquema",
+      "hide": "Ocultar esquema",
+      "empty": "Sin esquema"
+    },
+    "spellcheck": {
+      "enable": "Activar corrector",
+      "disable": "Desactivar corrector"
+    },
+    "pagination": {
+      "title": "Modo paginación",
+      "disable": "Salir de paginación",
+      "toggle": "Doble clic para alternar"
+    },
+    "shortcut": {
+      "title": "Atajos de teclado",
+      "text": "Texto",
+      "commonlyUsed": "Atajos comunes",
+      "copy": "Copiar",
+      "paste": "Pegar",
+      "pasteAsText": "Pegar como texto",
+      "paragraph": "Nuevo párrafo",
+      "hardBreak": "Salto de línea",
+      "format": "Formato de texto",
+      "page": "Vista de página",
+      "pageZoomIn": "Acercar",
+      "pageZoomOut": "Alejar",
+      "pageZoomReset": "Restablecer 100%",
+      "pageAutoWidth": "Ancho óptimo",
+      "markdown": "Markdown"
+    },
+    "changeLocale": {
+      "title": "Cambiar idioma",
+      "message": "La página se actualizará al cambiar el idioma; guarde antes. ¿Cambiar ahora?",
+      "confirm": "Cambiar ahora"
+    },
+    "resetAll": {
+      "title": "Restablecer editor",
+      "message": "Se borrarán ajustes y contenido. ¿Desea continuar?",
+      "reset": "Restablecer ahora"
+    },
+    "feedback": "Comentarios y sugerencias",
+    "poweredBy": "Tecnología de \"Umo Editor\"",
+    "wordCount": {
+      "characters": "Caracteres",
+      "title": "Estadísticas del documento",
+      "input": "Caracteres introducidos",
+      "selection": "Caracteres seleccionados",
+      "limit": "Límite de caracteres",
+      "currentPage": "Página actual",
+      "totalPage": "Total de páginas"
+    },
+    "preview": {
+      "title": "Modo presentación",
+      "disable": "Salir de presentación",
+      "laserPointer": "Puntero láser",
+      "exit": "Salir"
+    },
+    "fullscreen": {
+      "title": "Pantalla completa",
+      "disable": "Salir de pantalla completa"
+    },
+    "zoom": {
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "level": "Zoom actual:",
+      "autoWidth": "Ancho óptimo",
+      "autoWidthError": "Error de ancho automático",
+      "reset": "Restablecer 100%"
+    },
+    "node": {
+      "codeBlock": {
+        "menu": "Menú"
+      },
+      "image": {
+        "loading": "Cargando imagen...",
+        "error": "Error de imagen"
+      },
+      "textBox": {
+        "tip": "Doble clic para editar"
+      }
+    },
+    "file": {
+      "uploading": "Subiendo archivo...",
+      "download": "Descargar",
+      "limit": "El archivo \"{filename}\" supera {size} MB",
+      "notAllow": {
+        "title": "Error",
+        "message": "No se permite este tipo de archivo."
+      }
+    },
+    "save": {
+      "text": "Guardar",
+      "saved": "Guardado",
+      "unsaved": "Sin guardar",
+      "network": "Red:",
+      "online": "En línea",
+      "offline": "Sin conexión",
+      "saving": "Guardando...",
+      "savedAt": "Hora de guardado:",
+      "savedAtText": "Guardado a las {time}",
+      "failed": "Error al guardar",
+      "success": "Guardado correctamente",
+      "error": "Error de guardado",
+      "cache": {
+        "text": "Restaurar desde caché",
+        "error": {
+          "title": "Error",
+          "message": "No hay contenido en caché"
+        }
+      }
+    },
+    "print": {
+      "text": "Imprimir",
+      "title": "Imprimir documento",
+      "message": "Asegúrese de que todas las imágenes estén cargadas y luego elija \"Guardar como PDF\".",
+      "confirm": "Imprimir"
+    },
+    "time": {
+      "justNow": "Justo ahora",
+      "past": "hace {n}",
+      "yesterday": "Ayer",
+      "day": "{n} día(s)",
+      "hour": "{n} hora(s)",
+      "minute": "{n} minuto(s)",
+      "second": "{n} segundo(s)"
+    },
+    "dialog": {
+      "cancel": "Cancelar"
+    },
+    "templates": {
+      "workTask": {
+        "title": "Tarea de Trabajo",
+        "description": "Plantilla de tarea de trabajo",
+        "content": "<h1>Tarea de Trabajo</h1><h3>Nombre de la Tarea:</h3><p>[Descripción breve de la tarea]</p><h3>Asignado a:</h3><p>[Nombre de la persona que realizará la tarea]</p><h3>Fecha de Vencimiento:</h3><p>[Fecha en la que debe completarse la tarea]</p><h3>Detalles de la Tarea:</h3><ol><li>[Paso de tarea 1]</li><li>[Paso de tarea 2]</li><li>[Paso de tarea 3]...</li></ol><h3>Objetivos:</h3><p>[Metas específicas o resultados que debe lograr la tarea]</p><h3>Notas:</h3><p>[Información adicional o consideraciones]</p>"
+      },
+      "weeklyReport": {
+        "title": "Informe Semanal",
+        "description": "Plantilla de informe semanal",
+        "content": "<h1>Informe Semanal</h1><h2>Resumen del Trabajo de Esta Semana</h2><hr /><h3>Tareas Completadas:</h3><ul><li>[Nombre de Tarea 1]: [Descripción breve del contenido de la tarea y estado de finalización]</li><li>[Nombre de Tarea 2]: [Descripción breve del contenido de la tarea y estado de finalización]</li><li>...</li></ul><h3>Tareas en Curso:</h3><ul><li>[Nombre de Tarea 1]: [Descripción breve del progreso actual y próximos pasos]</li><li>[Nombre de Tarea 2]: [Descripción breve del progreso actual y próximos pasos]</li><li>...</li></ul><h3>Problemas y Desafíos:</h3><ul><li>[Problema 1]: [Descripción del problema encontrado y solución actual o apoyo necesario]</li><li>[Problema 2]: [Descripción del problema encontrado y solución actual o apoyo necesario]</li><li>...</li></ul><hr /><h2>Plan de Trabajo de la Próxima Semana</h2><h3>Tareas Planificadas:</h3><ul><li>[Nombre de Tarea 1]: [Descripción breve del contenido de la tarea planificada para la próxima semana]</li><li>[Nombre de Tarea 2]: [Descripción breve del contenido de la tarea planificada para la próxima semana]</li><li>...</li></ul><h3>Apoyo y Recursos Necesarios:</h3><ul><li>[Recurso 1]: [Descripción de recursos o apoyo necesario]</li><li>[Recurso 2]: [Descripción de recursos o apoyo necesario]</li><li>...</li></ul>"
+      }
+    }
+  }
+  
