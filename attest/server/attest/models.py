@@ -240,6 +240,7 @@ class Check(BaseModel):
     name: str
     ok: bool
     detail: str = ""
+    info: bool = False  # informational: reported, but does not decide the verdict
 
 
 class VerifyRequest(BaseModel):

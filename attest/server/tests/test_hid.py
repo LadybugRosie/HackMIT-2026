@@ -129,6 +129,28 @@ def test_gap_and_missing_final_and_wrong_anchor():
     assert not stale.supports_l3 and "chain root" in dict((n, d) for n, _, d in stale.checks)["hid_anchors"]
 
 
+def test_scripted_multichar_insert_without_key_events_is_injection():
+    genesis = random_head()
+    raw = typed_with_kd("Honest start. ")
+    ts = raw[-1]["ts"] + 400
+    raw.append({"ts": ts, "p": len("Honest start. "), "d": 0, "i": "Then a script inserted this whole sentence at once.", "k": "type"})
+    events = build_chain(genesis, raw)
+    heads = {genesis, *(e["hash"] for e in events)}
+    root = events[-1]["hash"]
+    h = FakeHelper()
+    honest_kd = kd_ts(events)                       # hardware saw only the real key presses
+    sts = h.witness("s", genesis, root, honest_kd, t_end=ts + 1000)
+    s = _assess(h, sts, events, heads, root)
+    assert not s.supports_l3 and s.injection_windows, s.reasons
+    assert s.ledger_kd == len(honest_kd) + len("Then a script inserted this whole sentence at once.") - 1
+    # autocorrect-shaped replacement (delete 4, insert 5) is one key press: no penalty
+    raw2 = typed_with_kd("teh ")
+    raw2.append({"ts": raw2[-1]["ts"] + 50, "p": 0, "d": 4, "i": "the ", "k": "type"})
+    ev2 = build_chain(genesis, raw2)
+    s2 = _assess(h, h.witness("s", genesis, ev2[-1]["hash"], kd_ts(ev2)), ev2, {genesis, *(e["hash"] for e in ev2)}, ev2[-1]["hash"])
+    assert s2.supports_l3, s2.reasons
+
+
 def test_unwitnessed_prefix_fails_coverage():
     genesis, events, heads, root = _ledger()
     h = FakeHelper()

@@ -94,10 +94,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     cert = json.load(open(args.certificate, encoding="utf-8"))
     text = open(args.document, encoding="utf-8", newline="").read()
-    checks: List[Tuple[str, bool, str]] = []
+    checks: List[Tuple[str, bool, str, bool]] = []  # (name, ok, detail, informational)
 
-    def check(name: str, ok: bool, if_ok: str, if_fail: str) -> None:
-        checks.append((name, ok, if_ok if ok else if_fail))
+    def check(name: str, ok: bool, if_ok: str, if_fail: str, info: bool = False) -> None:
+        checks.append((name, ok, if_ok if ok else if_fail, info and not ok))
 
     check("doc_sha256", sha256_hex(text) == cert["doc_sha256"],
           "submitted text matches certificate", "submitted text does NOT match certificate hash")
@@ -132,15 +132,21 @@ def main(argv: Optional[List[str]] = None) -> int:
             level, results, summary = assess_attestations(attestations, offline_attestors(), cert["chain_root"], heads,
                                                           events=events if args.events else None,
                                                           trusted_cdhashes=args.trust_helper or ())
+            claims_l3 = claimed == "L3"  # a witness that did not qualify is why a cert stays L2, not a defect
+            hid_b = [(att, res) for att, res in zip(attestations, results) if att.get("kind") == "hid"]
             for n, (att, res) in enumerate(zip(attestations, results)):
                 if att.get("kind") == "hid":
-                    check(f"hid[{n}]", res.ok, res.detail, res.detail)
                     continue
                 tag = "final" if att.get("head") == cert["chain_root"] else "checkpoint"
                 check(f"{res.kind}[{n}]", res.ok, f"{tag} {str(att.get('head'))[:12]}… — {res.detail}",
                       f"{tag} {str(att.get('head'))[:12]}… — {res.detail}")
+            if hid_b:
+                bad = [res for _a, res in hid_b if not res.ok]
+                n_st = sum(len(a.get("statements") or []) for a, _r in hid_b)
+                check("hid_batches", not bad, f"{len(hid_b)} batch(es), {n_st} signed statement(s) verified",
+                      f"{len(bad)} of {len(hid_b)} batch(es) failed: {bad[0].detail if bad else ''}", info=not claims_l3)
             for c in summary.get("hid_checks", []):
-                check(c["name"], c["ok"], c["detail"], c["detail"])
+                check(c["name"], c["ok"], c["detail"], c["detail"], info=not claims_l3)
             check("assurance_level", level == claimed, f"attestations support {level}",
                   f"attestations support {level}, certificate claims {claimed}")
             if summary["final_head_signed"]:
@@ -156,9 +162,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             check("attestations", False, "", f"{len(attestations)} attestation(s) present but server/attest modules not found — cannot verify above L1")
 
-    all_ok = all(ok for _, ok, _ in checks)
-    for name, ok, detail in checks:
-        print(f"  [{'PASS' if ok else 'FAIL'}] {name:16s} {detail}")
+    all_ok = all(ok or info for _, ok, _, info in checks)
+    for name, ok, detail, info in checks:
+        print(f"  [{'PASS' if ok else 'INFO' if info else 'FAIL'}] {name:16s} {detail}")
     level = claimed if all_ok else "none"
     print(f"\n{'PASS' if all_ok else 'FAIL'} — assurance level {level}{level_note}"
           f"{'' if args.events else '  (certificate-only check; pass --events for full ledger re-derivation)'}")

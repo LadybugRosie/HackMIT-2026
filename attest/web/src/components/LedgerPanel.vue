@@ -3,11 +3,22 @@ import { computed } from 'vue'
 import IntegrityPanel from './IntegrityPanel.vue'
 
 const props = defineProps({ state: { type: Object, required: true } })
-const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert', 'enroll', 'checkpoint'])
+const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert', 'enroll', 'checkpoint', 'enroll-hid'])
 
 const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-6)}` : '—')
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const attSummary = computed(() => props.state.certificate?.claims?.attestation ?? null)
+const hid = computed(() => props.state.hid ?? {})
+const hidStatus = computed(() => {
+  const h = hid.value
+  if (!h.available) return { label: 'no helper', cls: 'muted' }
+  if (h.permission !== 'granted') return { label: 'needs Input Monitoring', cls: 'warn' }
+  if (!h.enrolled) return { label: 'not enrolled', cls: 'warn' }
+  if (h.injections?.length) return { label: 'injection detected', cls: 'bad' }
+  if (h.witnessing) return { label: `witnessing · seal → ${props.state.levelPreview}`, cls: 'good' }
+  return { label: props.state.finalized ? 'sealed' : 'idle', cls: 'muted' }
+})
+const hidLevelText = computed(() => props.state.certificate?.assurance_level === 'L3' ? 'L3 (software witness)' : props.state.certificate?.assurance_level)
 const status = computed(() => {
   if (props.state.error) return { label: 'error', cls: 'bad' }
   if (props.state.finalized) return { label: 'finalized', cls: 'good' }
@@ -72,8 +83,43 @@ const status = computed(() => {
       <p v-if="state.attestError" class="warn small">{{ state.attestError }}</p>
     </section>
 
+    <section class="device">
+      <h3>Hardware witness <span class="pill" :class="hidStatus.cls">{{ hidStatus.label }}</span></h3>
+      <template v-if="!hid.available">
+        <p class="hint muted">Run <code>native/attest-hid</code> for L3: a helper below the browser counts <em>physical</em> key-downs and signs them, so the certificate can prove the keystrokes were typed, not injected. It never records which keys.</p>
+      </template>
+      <template v-else-if="hid.permission !== 'granted'">
+        <p class="hint muted">Helper found, but macOS has not granted it Input Monitoring. System Settings → Privacy &amp; Security → Input Monitoring → enable <em>attest-hid</em>, then relaunch it.</p>
+      </template>
+      <template v-else-if="!hid.enrolled">
+        <p class="hint muted">Helper running ({{ hid.backend === 'secure_enclave' ? 'Secure Enclave key' : 'software key' }}). Enroll its key under your account so its statements count for your sessions.</p>
+        <div class="actions">
+          <button class="primary" :disabled="hid.enrolling || state.finalized" @click="emit('enroll-hid')">{{ hid.enrolling ? 'Enrolling…' : 'Enroll witness' }}</button>
+        </div>
+      </template>
+      <template v-else>
+        <dl>
+          <dt>Helper</dt><dd class="mono">{{ short(hid.cdhash) }} <span class="muted">· {{ hid.backend === 'secure_enclave' ? 'Enclave key' : 'software key' }}</span></dd>
+          <dt>Windows</dt><dd>{{ hid.windows }} <span class="muted">relayed</span></dd>
+          <dt v-if="hid.summary">Key-downs</dt>
+          <dd v-if="hid.summary" :class="hid.summary.hw_kd >= hid.summary.ledger_kd ? 'good' : 'bad'">
+            editor {{ hid.summary.ledger_kd }} · keyboard {{ hid.summary.hw_kd }} {{ hid.summary.hw_kd >= hid.summary.ledger_kd ? '✓' : '✗' }}
+          </dd>
+          <dt v-if="hid.summary?.devices?.length">Devices</dt>
+          <dd v-if="hid.summary?.devices?.length" class="mono">
+            <span v-for="d in hid.summary.devices" :key="d.id">{{ d.id }}{{ d.builtin ? ' (built-in)' : '' }} {{ Math.round(d.share * 100) }}% </span>
+          </dd>
+        </dl>
+        <ul v-if="hid.injections?.length" class="ckpts bad">
+          <li v-for="w in hid.injections" :key="w.seq" class="mono">{{ clock(w.t0) }}–{{ clock(w.t1) }} · editor {{ w.ledger_kd }} · keyboard {{ w.hw_kd }} — injected</li>
+        </ul>
+        <p v-else-if="hid.summary && hid.summary.coverage_ratio < 1" class="warn small">Coverage {{ Math.round(hid.summary.coverage_ratio * 100) }}% — some keystrokes were typed before the witness started.</p>
+      </template>
+      <p v-if="hid.error" class="warn small">{{ hid.error }}</p>
+    </section>
+
     <section v-if="state.certificate" class="cert">
-      <h3>Certificate <span class="pill good">{{ state.certificate.assurance_level }}</span></h3>
+      <h3>Certificate <span class="pill good">{{ hidLevelText }}</span></h3>
       <dl>
         <dt>doc_sha256</dt><dd class="mono">{{ short(state.certificate.doc_sha256) }}</dd>
         <dt>chain_root</dt><dd class="mono">{{ short(state.certificate.chain_root) }}</dd>
@@ -88,6 +134,14 @@ const status = computed(() => {
           </dd>
           <dt>timestamps</dt>
           <dd><span v-if="attSummary.timestamps">{{ attSummary.timestamps }} · {{ attSummary.first_timestamp?.slice(11, 19) }}–{{ attSummary.last_timestamp?.slice(11, 19) }} UTC</span><span v-else class="muted">none</span></dd>
+          <template v-if="attSummary.hid">
+            <dt>witness</dt>
+            <dd>
+              <span :class="attSummary.hid.supports_l3 ? 'good' : 'warn'">{{ attSummary.hid.supports_l3 ? 'agrees with the ledger' : 'did not qualify' }}</span>
+              · {{ attSummary.hid.windows }} windows · editor {{ attSummary.hid.ledger_kd }} / keyboard {{ attSummary.hid.hw_kd }}
+              <span v-if="attSummary.hid.reasons?.length" class="warn"> · {{ attSummary.hid.reasons[0] }}</span>
+            </dd>
+          </template>
         </template>
       </dl>
       <div class="actions">
@@ -96,8 +150,8 @@ const status = computed(() => {
         <button class="primary" @click="emit('verify')">Verify current text</button>
       </div>
       <ul v-if="state.verification" class="checks">
-        <li v-for="c in state.verification.checks" :key="c.name" :class="c.ok ? 'good' : 'bad'">
-          <span class="mono">{{ c.ok ? 'PASS' : 'FAIL' }}</span> {{ c.name }} <small class="muted">{{ c.detail }}</small>
+        <li v-for="c in state.verification.checks" :key="c.name" :class="c.ok ? 'good' : c.info ? 'warn' : 'bad'">
+          <span class="mono">{{ c.ok ? 'PASS' : c.info ? 'INFO' : 'FAIL' }}</span> {{ c.name }} <small class="muted">{{ c.detail }}</small>
         </li>
         <li class="summary" :class="state.verification.ok ? 'good' : 'bad'">
           {{ state.verification.ok ? 'Certificate verifies' : 'Verification FAILED' }} · level {{ state.verification.assurance_level }}

@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set, 
 
 from .analysis import analyze
 from .attestors import AttestationResult, Attestor, offline_attestors
-from .attestors.policy import LEVEL_CHAIN_VALID, LEVEL_DEVICE_BOUND, LEVEL_DOC_BOUND, assess_attestations
+from .attestors.policy import LEVEL_CHAIN_VALID, LEVEL_DEVICE_BOUND, LEVEL_DOC_BOUND, LEVEL_HARDWARE_WITNESS, assess_attestations
 from .chain import merkle_root, sha256_hex, verify_chain
 from .models import Certificate, Check
 from .replay import ReplayError, replay
@@ -71,7 +71,7 @@ def verify_certificate(
 
     if events is None:
         _attestation_checks(cert, None, checks, None, trusted_cdhashes)
-        ok = all(c.ok for c in checks)
+        ok = all(c.ok or c.info for c in checks)
         return ok, cert.assurance_level if ok else "none", checks
 
     chain = verify_chain(events, cert.genesis)
@@ -93,7 +93,7 @@ def verify_certificate(
     checks.append(Check(name="replay", ok=replay_ok, detail=detail))
     _attestation_checks(cert, {cert.genesis, *(e["hash"] for e in events)} if chain.ok else set(), checks, events, trusted_cdhashes)
 
-    all_ok = all(c.ok for c in checks)
+    all_ok = all(c.ok or c.info for c in checks)
     level = cert.assurance_level if all_ok else (LEVEL_CHAIN_VALID if chain.ok and root_ok else "none")
     return all_ok, level, checks
 
@@ -106,15 +106,24 @@ def _attestation_checks(cert: Certificate, known_heads: Optional[Set[str]], chec
     certificate claiming L2 with no verifiable device signature over its chain root fails here."""
     level, results, summary = assess_attestations(cert.attestations, attestors or offline_attestors(), cert.chain_root, known_heads,
                                                   events=events, trusted_cdhashes=trusted_cdhashes)
+    hid_batches = [(n, att, res) for n, (att, res) in enumerate(zip(cert.attestations, results)) if att.get("kind") == "hid"]
     for n, (att, res) in enumerate(zip(cert.attestations, results)):
         if att.get("kind") == "hid":
-            checks.append(Check(name=f"hid[{n}]", ok=res.ok, detail=res.detail))
             continue
         head = str(att.get("head", ""))[:12]
         tag = "final" if att.get("head") == cert.chain_root else ("checkpoint" if known_heads is not None else "checkpoint (ledger needed to place it)")
         checks.append(Check(name=f"{res.kind}[{n}]", ok=res.ok, detail=f"{tag} {head}… — {res.detail}"))
+    # Hardware witness: a failing witness is *why* a certificate stays at L2, not a defect in it, so
+    # its checks decide the verdict only when the certificate claims L3.
+    claims_l3 = cert.assurance_level == LEVEL_HARDWARE_WITNESS
+    if hid_batches:
+        bad = [(n, res) for n, _a, res in hid_batches if not res.ok]
+        n_st = sum(len(a.get("statements") or []) for _n, a, _r in hid_batches)
+        checks.append(Check(name="hid_batches", ok=not bad, info=not claims_l3 and bool(bad),
+                            detail=f"{len(hid_batches)} batch(es), {n_st} signed statement(s) verified" if not bad
+                            else f"{len(bad)} of {len(hid_batches)} batch(es) failed: {bad[0][1].detail}"))
     for c in summary.get("hid_checks", []):
-        checks.append(Check(name=c["name"], ok=c["ok"], detail=c["detail"]))
+        checks.append(Check(name=c["name"], ok=c["ok"], info=not claims_l3 and not c["ok"], detail=c["detail"]))
     if cert.attestations or cert.assurance_level not in (LEVEL_DOC_BOUND, LEVEL_CHAIN_VALID):
         level_ok = level == cert.assurance_level
         checks.append(Check(name="assurance_level", ok=level_ok,

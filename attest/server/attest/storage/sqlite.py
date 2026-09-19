@@ -51,6 +51,10 @@ class SqliteStore:
             )
 
     def get(self, session_id: str) -> Optional[SessionRecord]:
+        with self._lock:  # one connection shared across request threads: reads need the lock too
+            return self._get(session_id)
+
+    def _get(self, session_id: str) -> Optional[SessionRecord]:
         row = self._conn.execute(
             "SELECT session_id, server_nonce, genesis, created_ms, doc_id, head, replay_mismatches, certificate, owner "
             "FROM sessions WHERE session_id=?", (session_id,)).fetchone()
@@ -76,7 +80,7 @@ class SqliteStore:
                 "UPDATE sessions SET head=?, replay_mismatches=replay_mismatches+? WHERE session_id=?",
                 (head, 0 if replay_ok else 1, session_id),
             )
-        rec = self.get(session_id)
+            rec = self._get(session_id)
         assert rec is not None
         return rec
 
@@ -98,9 +102,11 @@ class SqliteStore:
                                 int(credential.get("created_ms", 0))))
 
     def get_credential(self, credential_id: str) -> Optional[Dict[str, Any]]:
-        row = self._conn.execute("SELECT data FROM credentials WHERE credential_id=?", (credential_id,)).fetchone()
+        with self._lock:
+            row = self._conn.execute("SELECT data FROM credentials WHERE credential_id=?", (credential_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
     def list_credentials(self, owner: str) -> List[Dict[str, Any]]:
-        return [json.loads(r[0]) for r in self._conn.execute(
-            "SELECT data FROM credentials WHERE owner=? ORDER BY created_ms", (owner,))]
+        with self._lock:
+            rows = self._conn.execute("SELECT data FROM credentials WHERE owner=? ORDER BY created_ms", (owner,)).fetchall()
+        return [json.loads(r[0]) for r in rows]

@@ -47,7 +47,10 @@ export const Capture = Extension.create({
     dom.addEventListener('cut', onCopy)
     // Timing-only events: no key identity, just when a physical key went down/up.
     const timingKey = (e) => e.key.length === 1 || ['Backspace', 'Enter', 'Delete', 'Tab'].includes(e.key)
+    // `e.repeat` is the OS auto-repeating a held key: one physical key-down, many DOM events. The
+    // hardware witness (L3) sees one, so the ledger must count one too.
     dom.addEventListener('keydown', (e) => {
+      if (e.repeat) return
       if (timingKey(e) && !e.metaKey && !e.ctrlKey) this.options.onEvent({ ts: Date.now(), p: 0, d: 0, i: '', k: 'kd', src: null })
     })
     dom.addEventListener('keyup', (e) => {

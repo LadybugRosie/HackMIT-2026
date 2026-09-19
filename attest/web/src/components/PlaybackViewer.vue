@@ -35,8 +35,9 @@ onBeforeUnmount(() => engine.destroy())
     </div>
 
     <div ref="bar" class="timeline" @click="seekFromClick" title="Click to seek">
-      <span v-for="(m, i) in st.markers" :key="i" :class="['mark', m.kind]" :style="{ left: pct(m.i) }"
-            :title="m.kind === 'pause' ? `pause ${fmtClock(m.ms)}` : m.kind"></span>
+      <span v-for="(m, i) in st.markers" :key="i" :class="['mark', m.kind]"
+            :style="m.kind === 'injected' ? { left: pct(m.i), width: `calc(${pct(m.to)} - ${pct(m.i)})` } : { left: pct(m.i) }"
+            :title="m.kind === 'pause' ? `pause ${fmtClock(m.ms)}` : m.kind === 'injected' ? `injected: editor keystrokes with ${m.hw} hardware key-downs` : m.kind"></span>
       <span class="head" :style="{ left: pct(st.index) }"></span>
     </div>
 
@@ -73,6 +74,7 @@ onBeforeUnmount(() => engine.destroy())
 .mark { position: absolute; top: 2px; width: 3px; height: 8px; border-radius: 1px; transform: translateX(-50%); }
 .mark.paste { background: var(--bad); } .mark.internal { background: var(--accent); } .mark.delete { background: var(--warn); }
 .mark.pause { background: var(--muted); top: 9px; height: 4px; opacity: 0.6; }
+.mark.injected { background: color-mix(in srgb, var(--bad) 35%, transparent); border: 1px solid var(--bad); top: 0; height: 100%; min-width: 3px; }
 .head { position: absolute; top: -3px; width: 3px; height: 18px; background: var(--text); border-radius: 2px; transform: translateX(-50%); }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
 .inline { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }

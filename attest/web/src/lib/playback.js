@@ -34,6 +34,7 @@ export class PlaybackEngine {
     this.events = payload.events
     this.n = this.events.length
     this.pauseAfter = new Map(payload.pauses.map((p) => [p.after_seq, p.ms]))
+    this.injected = (payload.hid_windows || []).filter((w) => w.injected)
     this._cps = []
     this._origins = []
     this._timer = null
@@ -45,6 +46,12 @@ export class PlaybackEngine {
 
   _markers() {
     const out = []
+    // Hardware-witness injection windows: a band over the events that fell inside them.
+    for (const w of this.injected) {
+      let from = -1, to = -1
+      this.events.forEach((e, i) => { if (e.ts >= w.t0 && e.ts < w.t1) { if (from < 0) from = i; to = i } })
+      if (from >= 0) out.push({ i: from, to: to + 1, kind: 'injected', hw: w.hw_kd })
+    }
     this.events.forEach((e, i) => {
       if (e.k === 'paste') out.push({ i, kind: e.origin === 'INT' ? 'internal' : 'paste' })
       else if (e.k === 'ckpt') out.push({ i, kind: 'paste' })

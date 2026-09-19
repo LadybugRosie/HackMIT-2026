@@ -14,8 +14,11 @@ const busy = ref(false)
 const short = (h) => (h ? `${h.slice(0, 10)}…${h.slice(-8)}` : '—')
 const att = props.certificate.claims?.attestation ?? null
 const LEVEL_TEXT = {
-  L0: 'ledger chain valid', L1: 'ledger bound to this text', L2: 'ledger bound to this text and signed on the student’s device', L3: 'hardware-origin keystrokes',
+  L0: 'ledger chain valid', L1: 'ledger bound to this text', L2: 'ledger bound to this text and signed on the student’s device',
+  L3: 'L2 + a hardware witness below the browser saw a physical key-down for every keystroke (software witness — see README)',
 }
+const hid = att?.hid ?? null
+const levelLabel = props.certificate.assurance_level === 'L3' ? 'L3 · witness' : props.certificate.assurance_level
 
 function download(name, obj) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' })
@@ -34,7 +37,7 @@ async function downloadLedger() {
 
 <template>
   <section class="card cert">
-    <h3>Proof-of-Writing certificate <span class="pill" :class="certificate.assurance_level === 'L2' ? 'strong' : 'good'" :title="LEVEL_TEXT[certificate.assurance_level]">{{ certificate.assurance_level }}</span></h3>
+    <h3>Proof-of-Writing certificate <span class="pill" :class="certificate.assurance_level >= 'L2' ? 'strong' : 'good'" :title="LEVEL_TEXT[certificate.assurance_level]">{{ levelLabel }}</span></h3>
     <p class="muted small">
       Binds the submitted text (<span class="mono">{{ short(certificate.doc_sha256) }}</span>) to the ledger that produced it
       (<span class="mono">{{ short(certificate.chain_root) }}</span>, {{ certificate.event_count }} events) · issued {{ fmtDate(certificate.created_ms) }}
@@ -46,6 +49,14 @@ async function downloadLedger() {
         <template v-if="att.timestamps"> · {{ att.timestamps }} trusted timestamp{{ att.timestamps === 1 ? '' : 's' }} ({{ att.first_timestamp?.slice(0, 16).replace('T', ' ') }}–{{ att.last_timestamp?.slice(11, 16) }} UTC)</template>
       </template>
       <template v-else>No device signature — the ledger is bound to the text (L1) but not to a particular machine.</template>
+    </p>
+    <p v-if="hid" class="small att" :class="hid.supports_l3 ? 'good' : 'warn'">
+      <template v-if="hid.supports_l3">
+        Hardware witness: {{ hid.windows }} windows, {{ Math.round(hid.coverage_ratio * 100) }}% coverage, editor {{ hid.ledger_kd }} / keyboard {{ hid.hw_kd }} key-downs, no injection ·
+        {{ hid.devices.map((d) => `${d.builtin ? 'built-in keyboard' : d.id} ${Math.round(d.share * 100)}%`).join(', ') }} ·
+        helper {{ hid.helper_trusted === true ? 'pinned' : hid.helper_trusted === false ? 'NOT pinned' : 'unpinned (software witness)' }}
+      </template>
+      <template v-else>Hardware witness present but did not qualify: {{ hid.reasons?.join('; ') || 'see verify output' }}</template>
     </p>
     <dl>
       <dt>Document hash</dt><dd class="mono">{{ certificate.doc_sha256 }}</dd>
@@ -59,8 +70,8 @@ async function downloadLedger() {
       <button v-if="verify" class="primary" :disabled="busy" @click="runVerify">{{ busy ? 'Verifying…' : 'Verify on server' }}</button>
     </div>
     <ul v-if="result" class="checks">
-      <li v-for="c in result.checks" :key="c.name" :class="c.ok ? 'good' : 'bad'">
-        <span class="mono">{{ c.ok ? 'PASS' : 'FAIL' }}</span> {{ c.name }} <small class="muted">{{ c.detail }}</small>
+      <li v-for="c in result.checks" :key="c.name" :class="c.ok ? 'good' : c.info ? 'warn' : 'bad'">
+        <span class="mono">{{ c.ok ? 'PASS' : c.info ? 'INFO' : 'FAIL' }}</span> {{ c.name }} <small class="muted">{{ c.detail }}</small>
       </li>
       <li class="summary" :class="result.ok ? 'good' : 'bad'">
         {{ result.ok ? 'Certificate verifies' : 'Verification FAILED' }} · level {{ result.assurance_level }}

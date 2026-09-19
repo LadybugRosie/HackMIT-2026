@@ -34,6 +34,7 @@ function download(name, obj) {
       @verify="ledger.verify(getText())"
       @enroll="ledger.enroll().catch(() => {})"
       @checkpoint="ledger.checkpoint('discouraged').catch(() => {})"
+      @enroll-hid="ledger.enrollHid().catch(() => {})"
       @export-cert="download(`attest-cert-${ledger.state.sessionId.slice(0, 8)}.json`, ledger.state.certificate)"
       @export-ledger="download(`attest-ledger-${ledger.state.sessionId.slice(0, 8)}.json`, ledger.exportLedger())"
     />

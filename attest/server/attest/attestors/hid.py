@@ -133,13 +133,27 @@ class HidSummary:
 
 
 def ledger_keystroke_ts(events: Sequence[Mapping[str, Any]]) -> Tuple[List[int], str]:
-    """Timestamps of keystrokes as the ledger saw them: content-free `kd` events when present,
-    else single-code-point edits (older ledgers) — reported as the weaker basis."""
+    """Timestamps of keystrokes as the ledger saw them.
+
+    Primary basis: content-free `kd` events (one per physical key-down the browser saw). On top of
+    that, any `type` event that inserts more net text than one key press explains — `insertText`
+    from a script, dictation, a macro — contributes one keystroke-equivalent per extra code point at
+    its timestamp, so text that arrived without key events still has to be matched by hardware.
+    Autocorrect (delete 5, insert 5 -> net 0) and IME commits (net 3 for ~6 key-downs) stay within
+    the hardware >= editor rule. Pastes are excluded: provenance already labels them and a paste is
+    one physical Cmd-V. Older ledgers without `kd` fall back to edit events (weaker basis)."""
     kd = sorted(int(e["ts"]) for e in events if e.get("k") in LEDGER_KEY_KINDS)
-    if kd:
-        return kd, "kd"
-    edits = sorted(int(e["ts"]) for e in events if e.get("k") == "type" and len(e.get("i") or "") <= 1)
-    return edits, "edits"
+    extra: List[int] = []
+    for e in events:
+        if e.get("k") != "type":
+            continue
+        net = len(e.get("i") or "") - int(e.get("d", 0))
+        if kd:
+            if net >= 2:
+                extra.extend([int(e["ts"])] * (net - 1))  # the first code point may be the key the kd recorded
+        else:
+            extra.extend([int(e["ts"])] * max(1, net))
+    return sorted(kd + extra), ("kd" if kd else "edits")
 
 
 def tolerance(ledger_kd: int) -> int:

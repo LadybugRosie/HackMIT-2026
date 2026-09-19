@@ -47,6 +47,16 @@ def build_playback(rec: SessionRecord) -> Dict[str, Any]:
         prev = out
 
     mix = table.composition()
+    hid_windows: List[Dict[str, Any]] = []
+    injected = {(w.get("seg"), w.get("seq")) for w in ((rec.certificate or {}).get("claims", {}).get("attestation", {}).get("hid") or {}).get("injection_windows", [])}
+    for att in rec.attestations:
+        if att.get("kind") != "hid":
+            continue
+        for st in att.get("statements") or []:
+            if st.get("final"):
+                continue
+            hid_windows.append({"seg": st["seg"], "seq": st["seq"], "t0": int(st["t0"]), "t1": int(st["t1"]), "hw_kd": int(st.get("kd", 0)),
+                                "injected": (st["seg"], st["seq"]) in injected})
     return {
         "session_id": rec.session_id,
         "genesis": rec.genesis,
@@ -54,6 +64,7 @@ def build_playback(rec: SessionRecord) -> Dict[str, Any]:
         "duration_ms": (events[-1]["ts"] - events[0]["ts"]) if events else 0,
         "events": events,
         "pauses": pauses,
+        "hid_windows": hid_windows,
         "summary": {**counts, "pauses": len(pauses), "ext_chars": round(mix["external"] * table.length),
                     "int_chars": round(mix["internal"] * table.length), "typed_chars": round(mix["typed"] * table.length),
                     "final_chars": table.length},

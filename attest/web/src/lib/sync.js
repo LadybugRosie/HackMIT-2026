@@ -1,10 +1,12 @@
 import { reactive } from 'vue'
 import { ChainBuilder, sha256Hex } from './chain.js'
 import { enroll as waEnroll, listCredentials, signHead, webauthnAvailable } from './webauthn.js'
+import * as hid from './hid.js'
 
 const FLUSH_EVERY_EVENTS = 50
 const FLUSH_EVERY_MS = 5000
 const CHECKPOINT_EVERY_MS = 3 * 60_000 // silent device signature over the head every ~3 minutes
+const HID_POLL_MS = 6000               // relay the helper's signed windows to the server
 
 /**
  * Owns one ledger session: chains events client-side, batches them, ships to /v1/ingest,
@@ -22,6 +24,8 @@ export class LedgerSync {
     this.allEvents = []
     this.timer = null
     this.ckptTimer = null
+    this.hidTimer = null
+    this.hidSince = -1
     this.resumed = false
     this.sealing = false
     this.state = reactive({
@@ -31,6 +35,10 @@ export class LedgerSync {
       // Stage 3 (L2): device key + checkpoints
       webauthn: webauthnAvailable(), credentials: [], enrolling: false, signing: false,
       checkpoints: [], levelPreview: 'L1', attestError: null,
+      // Stage 4 (L3): hardware witness
+      hid: { available: false, permission: null, enrolled: false, keyId: null, backend: null, cdhash: null,
+             witnessing: false, seg: null, windows: 0, relayed: 0, lastWindow: null, injections: [], summary: null,
+             error: null, enrolling: false },
     })
   }
 
@@ -54,7 +62,8 @@ export class LedgerSync {
   stop() {
     clearInterval(this.timer)
     clearInterval(this.ckptTimer)
-    this.timer = this.ckptTimer = null
+    clearInterval(this.hidTimer)
+    this.timer = this.ckptTimer = this.hidTimer = null
     if (this._onBlur) window.removeEventListener('blur', this._onBlur)
     if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload)
   }
@@ -143,6 +152,7 @@ export class LedgerSync {
     if (this.state.credentials.length && this.state.webauthn) {
       try { await this.checkpoint('required') } catch (e) { this.state.attestError = `seal signature skipped: ${e.message}` }
     }
+    await this.sealWitness() // same final head as the device seal; `sealing` keeps it from moving
     const text = this.getText()
     const r = await this._fetch(`/v1/session/${this.state.sessionId}/finalize`, {
       method: 'POST', body: JSON.stringify({ final_text: text }),
@@ -179,10 +189,13 @@ export class LedgerSync {
 
   async refreshCredentials() {
     if (!this.state.sessionId) return
-    try {
-      this.state.credentials = await listCredentials((p, i) => this._fetch(p, i), this._sessionPath)
-    } catch { this.state.credentials = [] }
+    let all = []
+    try { all = await listCredentials((p, i) => this._fetch(p, i), this._sessionPath) } catch { all = [] }
+    this.state.credentials = all.filter((c) => (c.type ?? 'webauthn') === 'webauthn')
+    const hidCred = all.find((c) => c.type === 'hid')
+    this.state.hid.enrolled = !!hidCred
     this._armCheckpoints()
+    this.detectHid(hidCred)
   }
 
   _armCheckpoints() {
@@ -207,6 +220,102 @@ export class LedgerSync {
       throw e
     } finally {
       this.state.enrolling = false
+    }
+  }
+
+  // -- Stage 4 (L3): hardware witness ----------------------------------------------------------
+
+  /** Probe 127.0.0.1:8093; if the helper is up and its key is enrolled, start witnessing. */
+  async detectHid(hidCred = null) {
+    const st = await hid.detect()
+    const h = this.state.hid
+    if (!st) { h.available = false; h.witnessing = false; return }
+    Object.assign(h, { available: true, permission: st.permission, keyId: st.key_id, backend: st.key_backend, cdhash: st.cdhash })
+    if (h.enrolled && hidCred && hidCred.credential_id !== st.key_id) {
+      h.error = 'a different witness key is enrolled for this account — re-enroll to use this helper'
+    }
+    if (h.enrolled && !h.witnessing && !this.state.finalized) await this.startWitness()
+  }
+
+  /** Register the helper's Secure Enclave key under this session's owner (no Touch ID: silent key). */
+  async enrollHid() {
+    const h = this.state.hid
+    h.enrolling = true
+    h.error = null
+    try {
+      const opts = await (await this._fetch(`${this._sessionPath}/enroll/options`)).json()
+      const ident = await hid.identity()
+      const signed = await hid.enrollSign(opts.challenge)
+      const r = await this._fetch(`${this._sessionPath}/enroll-hid`, {
+        method: 'POST',
+        body: JSON.stringify({ public_key: ident.public_key, key_id: ident.key_id, cdhash: ident.cdhash,
+          key_backend: ident.key_backend, signature: signed.signature, helper_version: ident.helper_version }),
+      })
+      if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.detail?.detail || b.detail || `enroll-hid ${r.status}`) }
+      h.enrolled = true
+      await this.startWitness()
+    } catch (e) {
+      h.error = e.message
+      throw e
+    } finally {
+      h.enrolling = false
+    }
+  }
+
+  /** Anchor a witness segment at a head the server already holds, then relay windows as they close. */
+  async startWitness() {
+    const h = this.state.hid
+    if (!h.available || !h.enrolled || h.witnessing || this.state.finalized) return
+    try {
+      await this.flush()
+      while (this.state.syncing) await new Promise((r) => setTimeout(r, 50))
+      const res = await hid.start(this.state.sessionId, this.chain.head)
+      Object.assign(h, { witnessing: true, seg: res.seg, error: null })
+      this.hidSince = -1
+      clearInterval(this.hidTimer)
+      this.hidTimer = setInterval(() => this.relayHid().catch(() => {}), HID_POLL_MS)
+    } catch (e) {
+      h.error = `witness: ${e.message}`
+    }
+  }
+
+  /** Forward closed windows the helper has produced since the last relay. */
+  async relayHid() {
+    const h = this.state.hid
+    if (!h.witnessing) return
+    const res = await hid.statements(this.state.sessionId, this.hidSince)
+    const sts = res.statements || []
+    if (!sts.length) return
+    const r = await this._fetch(`${this._sessionPath}/attest-hid`, {
+      method: 'POST', body: JSON.stringify({ key_id: h.keyId, statements: sts }),
+    })
+    if (!r.ok) {
+      const b = await r.json().catch(() => ({}))
+      h.error = `relay ${r.status}: ${b.detail?.detail || JSON.stringify(b.detail ?? b)}`
+      if (b.detail?.code === 'hid_chain_break' || b.detail?.code === 'unknown_head') { h.witnessing = false; clearInterval(this.hidTimer) }
+      return
+    }
+    const out = await r.json()
+    this.hidSince = out.seq_to
+    h.relayed += out.accepted
+    h.windows = out.hid?.windows ?? h.windows
+    h.summary = out.hid ?? null
+    h.injections = out.hid?.injection_windows ?? []
+    const last = sts[sts.length - 1]
+    h.lastWindow = { t0: last.t0, t1: last.t1, hw: last.kd, final: !!last.final }
+    this.state.levelPreview = out.level_if_sealed_now
+    if (out.final) { h.witnessing = false; clearInterval(this.hidTimer) }
+  }
+
+  /** Terminal statement anchored at the final head; called during finalize after the device seal. */
+  async sealWitness() {
+    const h = this.state.hid
+    if (!h.witnessing) return
+    try {
+      await hid.seal(this.state.sessionId, this.chain.head)
+      await this.relayHid()
+    } catch (e) {
+      h.error = `seal witness: ${e.message}`
     }
   }
 

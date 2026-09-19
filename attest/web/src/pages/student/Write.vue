@@ -92,7 +92,8 @@ onBeforeUnmount(() => clearInterval(autosave))
               placeholder="Start writing. Every edit is chained; pastes are recorded as external text." @ready="onReady" />
       <LedgerPanel v-if="ledger" :state="ledger.state" @flush="ledger.flush()" @finalize="ledger.finalize()"
                    @verify="ledger.verify(getText())" @enroll="ledger.enroll().catch(() => {})"
-                   @checkpoint="ledger.checkpoint('discouraged').catch(() => {})" />
+                   @checkpoint="ledger.checkpoint('discouraged').catch(() => {})"
+      @enroll-hid="ledger.enrollHid().catch(() => {})" />
     </main>
   </template>
 </template>
