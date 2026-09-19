@@ -15,7 +15,7 @@ from attest.settings import Settings as AttestSettings
 
 from . import __version__
 from .db import Db
-from .routers import auth
+from .routers import assignments, auth, classes, dashboard, submissions
 from .settings import ClassroomSettings, settings as default_settings
 
 
@@ -32,7 +32,8 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
     app.include_router(attest_certificate.router)
     app.include_router(attest_verify.router)
 
-    app.include_router(auth.router)
+    for r in (auth, dashboard, classes, assignments, submissions):
+        app.include_router(r.router)
 
     @app.get("/healthz")
     def healthz() -> dict:
