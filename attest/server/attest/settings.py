@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:9100", "http://127.0.0.1:9100"]
     MAX_EVENTS_PER_BATCH: int = 5000
     MAX_EVENT_TEXT_CHARS: int = 200_000
+    STYLOMETRY_BASE: str = ""  # empty -> deterministic local stub (Stage 5)
 
 
 settings = Settings()
