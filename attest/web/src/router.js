@@ -19,6 +19,7 @@ const routes = [
   { path: '/teacher/assignments/:assignmentId/edit', component: () => import('./pages/teacher/AssignmentForm.vue'), meta: { role: 'teacher' } },
   { path: '/teacher/assignments/:assignmentId', component: () => import('./pages/teacher/AssignmentDetail.vue'), meta: { role: 'teacher' } },
   { path: '/teacher/submissions/:submissionId', component: () => import('./pages/teacher/GradeSubmission.vue'), meta: { role: 'teacher', wide: true } },
+  { path: '/teacher/submissions/:submissionId/playback', component: () => import('./pages/teacher/Playback.vue'), meta: { role: 'teacher', wide: true } },
 
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

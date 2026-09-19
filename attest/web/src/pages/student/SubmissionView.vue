@@ -6,10 +6,17 @@ import { fmtDate } from '../../lib/format.js'
 import StatusChip from '../../components/StatusChip.vue'
 import CertificateCard from '../../components/CertificateCard.vue'
 import IntegrityPanel from '../../components/IntegrityPanel.vue'
+import PlaybackViewer from '../../components/PlaybackViewer.vue'
 
 const route = useRoute()
 const sub = ref(null)
 const error = ref('')
+const playback = ref(null)
+const showReplay = ref(false)
+async function openReplay() {
+  showReplay.value = true
+  if (!playback.value) playback.value = await api.get(`/api/review/submissions/${sub.value.submission_id}/playback`)
+}
 
 onMounted(async () => {
   try { sub.value = await api.get(`/api/submissions/${route.params.submissionId}`) } catch (e) { error.value = e.message }
@@ -36,6 +43,11 @@ const ledger = () => api.get(`/api/review/submissions/${sub.value.submission_id}
         </section>
         <section v-else-if="sub.status === 'graded'" class="card muted small">Graded — your teacher hasn't released it yet.</section>
         <section class="card text"><p class="pre">{{ sub.content }}</p></section>
+        <section class="card">
+          <button v-if="!showReplay" @click="openReplay">Watch my replay</button>
+          <PlaybackViewer v-else-if="playback" :payload="playback" />
+          <p v-else class="muted">Loading ledger…</p>
+        </section>
       </div>
       <aside class="side">
         <CertificateCard v-if="sub.certificate" :certificate="sub.certificate" :verify="verify" :ledger="ledger" />
