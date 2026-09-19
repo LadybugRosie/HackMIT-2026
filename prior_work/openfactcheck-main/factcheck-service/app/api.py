@@ -426,6 +426,18 @@ def _fuzzy_title_similarity(title1: str, title2: str) -> float:
     return intersection / union if union > 0 else 0.0
 
 
+def _looks_like_identifier_not_title(s: str) -> bool:
+    """True if a quoted string is a URL / DOI / bare identifier rather than a
+    human title. Titles contain spaces; identifiers and URLs do not."""
+    t = s.strip()
+    low = t.lower()
+    if low.startswith(("http://", "https://", "doi:", "www.")):
+        return True
+    if re.match(r'^10\.\d{4,9}/', t):
+        return True
+    return " " not in t
+
+
 def _extract_citation_metadata(text: str, doi: str) -> Dict[str, Any]:
     """
     Extract EXPLICIT citation metadata near a DOI in text.
@@ -447,7 +459,7 @@ def _extract_citation_metadata(text: str, doi: str) -> Dict[str, Any]:
     # Strip ALL DOI-like substrings from the context before mining it —
     # otherwise digits inside a NEIGHBORING DOI (e.g. 10.9999/qbt.2024.00001)
     # bleed in as a bogus citation "year" for this one.
-    _doi_like = re.compile(r'10\.\d{4,9}/[-._;()/:A-Za-z0-9]+')
+    _doi_like = re.compile(r'10\.\d{4,9}/[-._;()/:<>A-Za-z0-9]+')
 
     # Year: search a TIGHT window (±80 chars) and require citation style —
     # parenthesized "(2020)" or "et al., 2020" / "Author, 2020".
@@ -473,9 +485,17 @@ def _extract_citation_metadata(text: str, doi: str) -> Dict[str, Any]:
     best_title = None
     best_dist = None
     for qm in re.finditer(r'["“]([^"”]{10,})["”]', raw_window):
+        cand = qm.group(1).strip()
+        # A quoted string is only a TITLE if it reads like one. In HTML the
+        # nearest quoted string is the href attribute value, so
+        # <a href="https://doi.org/10.1038/nature14539">…</a> was mined as the
+        # cited title and compared against the registry, producing a MISMATCH
+        # on a perfectly correct citation.
+        if _looks_like_identifier_not_title(cand):
+            continue
         dist = abs(qm.start() - doi_rel)
         if best_dist is None or dist < best_dist:
-            best_title, best_dist = qm.group(1), dist
+            best_title, best_dist = cand, dist
     if best_title:
         metadata["title"] = best_title
 

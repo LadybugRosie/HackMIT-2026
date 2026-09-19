@@ -1,0 +1,854 @@
+{
+ "base_url": "http://127.0.0.1:8090",
+ "total": 87,
+ "correct": 43,
+ "accuracy": 0.4942528735632184,
+ "skipped_placeholders": 12,
+ "per_category": {
+  "clean_positive": {
+   "n": 8,
+   "ok": 7
+  },
+  "doi_syntax": {
+   "n": 10,
+   "ok": 3
+  },
+  "nonexistent_doi": {
+   "n": 5,
+   "ok": 4
+  },
+  "doi_metadata_mismatch": {
+   "n": 8,
+   "ok": 3
+  },
+  "frankenstein": {
+   "n": 5,
+   "ok": 2
+  },
+  "fully_fabricated": {
+   "n": 6,
+   "ok": 1
+  },
+  "identifier_confusion": {
+   "n": 9,
+   "ok": 4
+  },
+  "normalization_negative_control": {
+   "n": 9,
+   "ok": 7
+  },
+  "retraction": {
+   "n": 3,
+   "ok": 1
+  },
+  "non_article_doi": {
+   "n": 2,
+   "ok": 1
+  },
+  "bibliographic_detail": {
+   "n": 6,
+   "ok": 1
+  },
+  "internal_consistency": {
+   "n": 5,
+   "ok": 2
+  },
+  "adversarial": {
+   "n": 5,
+   "ok": 3
+  },
+  "legitimately_unverifiable": {
+   "n": 4,
+   "ok": 3
+  },
+  "end_to_end": {
+   "n": 2,
+   "ok": 1
+  }
+ },
+ "cases": [
+  {
+   "id": "A01",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 9043.751290999353
+  },
+  {
+   "id": "A02",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 9673.516916926019
+  },
+  {
+   "id": "A03",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 9605.69958400447
+  },
+  {
+   "id": "A04",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 8771.575582912192
+  },
+  {
+   "id": "A05",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 1496.6228749835864
+  },
+  {
+   "id": "A06",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 2303.5445410059765
+  },
+  {
+   "id": "A07",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": false,
+   "ms": 2796.1742921033874
+  },
+  {
+   "id": "A08",
+   "category": "clean_positive",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 3497.5322500104085
+  },
+  {
+   "id": "B01",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 165.9015000332147
+  },
+  {
+   "id": "B02",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.5467499615624547
+  },
+  {
+   "id": "B03",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.534624956548214
+  },
+  {
+   "id": "B04",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.2796249939128757
+  },
+  {
+   "id": "B05",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.2676670448854566
+  },
+  {
+   "id": "B06",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1016/S0140 -> not_found",
+   "correct": true,
+   "ms": 3481.9949170341715
+  },
+  {
+   "id": "B07",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/na -> not_found",
+   "correct": true,
+   "ms": 3658.80237496458
+  },
+  {
+   "id": "B08",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 4093.2590829906985
+  },
+  {
+   "id": "B09",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1056/NEJMoa20020 -> not_found",
+   "correct": true,
+   "ms": 852.8399160131812
+  },
+  {
+   "id": "B10",
+   "category": "doi_syntax",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 5.3250829223543406
+  },
+  {
+   "id": "C01",
+   "category": "nonexistent_doi",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/s41591-023-02287-1 -> not_found",
+   "correct": true,
+   "ms": 10442.145625012927
+  },
+  {
+   "id": "C02",
+   "category": "nonexistent_doi",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1093/jamia/ocac999 -> not_found",
+   "correct": true,
+   "ms": 9398.93416594714
+  },
+  {
+   "id": "C03",
+   "category": "nonexistent_doi",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 957.5397080043331
+  },
+  {
+   "id": "C04",
+   "category": "nonexistent_doi",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/s42256-027-00891-4 -> not_found",
+   "correct": true,
+   "ms": 12234.403625014238
+  },
+  {
+   "id": "C05",
+   "category": "nonexistent_doi",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.7291/jcbm.2021.0208 -> not_found",
+   "correct": true,
+   "ms": 1065.0039580650628
+  },
+  {
+   "id": "D01",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": true,
+   "ms": 329.6198749449104
+  },
+  {
+   "id": "D02",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 140.8599999267608
+  },
+  {
+   "id": "D03",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/nature14539 -> mismatch",
+   "correct": true,
+   "ms": 140.4098329367116
+  },
+  {
+   "id": "D04",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 387.34933303203434
+  },
+  {
+   "id": "D05",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": true,
+   "ms": 7964.349957997911
+  },
+  {
+   "id": "D06",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 193.05300002451986
+  },
+  {
+   "id": "D07",
+   "category": "doi_metadata_mismatch",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 6992.040709010325
+  },
+  {
+   "id": "D08",
+   "category": "doi_metadata_mismatch",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 614.1863329103217
+  },
+  {
+   "id": "E01",
+   "category": "frankenstein",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 16414.039916009642
+  },
+  {
+   "id": "E02",
+   "category": "frankenstein",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 2.9415409080684185
+  },
+  {
+   "id": "E03",
+   "category": "frankenstein",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 8245.919416891411
+  },
+  {
+   "id": "E04",
+   "category": "frankenstein",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "claim contradicted by retrieved evidence",
+   "correct": true,
+   "ms": 7622.31716606766
+  },
+  {
+   "id": "E05",
+   "category": "frankenstein",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": true,
+   "ms": 4612.023042049259
+  },
+  {
+   "id": "F01",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 7484.661040944047
+  },
+  {
+   "id": "F02",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 2.612207899801433
+  },
+  {
+   "id": "F03",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 540.71129206568
+  },
+  {
+   "id": "F04",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 8473.800749983639
+  },
+  {
+   "id": "F05",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.3680419651791453
+  },
+  {
+   "id": "F06",
+   "category": "fully_fabricated",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.13026/mimic-v-2024 -> not_found",
+   "correct": true,
+   "ms": 6747.700084000826
+  },
+  {
+   "id": "G01",
+   "category": "identifier_confusion",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 7050.340208923444
+  },
+  {
+   "id": "G02",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "identifier_format: Invalid arXiv identifier",
+   "correct": true,
+   "ms": 3195.0455830665305
+  },
+  {
+   "id": "G03",
+   "category": "identifier_confusion",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 334.3859169399366
+  },
+  {
+   "id": "G04",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 165.85858399048448
+  },
+  {
+   "id": "G05",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "identifier_format: Invalid PMID",
+   "correct": true,
+   "ms": 1.8251249566674232
+  },
+  {
+   "id": "G06",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.5238330233842134
+  },
+  {
+   "id": "G07",
+   "category": "identifier_confusion",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.35591602884233
+  },
+  {
+   "id": "G08",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "identifier_format: PMCID used as a DOI",
+   "correct": true,
+   "ms": 1.2678749626502395
+  },
+  {
+   "id": "G09",
+   "category": "identifier_confusion",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "identifier_format: ISSN used as a DOI",
+   "correct": true,
+   "ms": 5.928625003434718
+  },
+  {
+   "id": "H01",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 504.4249170459807
+  },
+  {
+   "id": "H02",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 118.88433306012303
+  },
+  {
+   "id": "H03",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 116.45674996543676
+  },
+  {
+   "id": "H04",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "flag",
+   "reason": "doi 10.1002/(SICI)1521-3773(19980316)37:5<579::AID-ANIE579>3.0.CO;2-O -> not_found",
+   "correct": false,
+   "ms": 2593.235999927856
+  },
+  {
+   "id": "H05",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 4036.59695899114
+  },
+  {
+   "id": "H07",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 3.662041970528662
+  },
+  {
+   "id": "H08",
+   "category": "normalization_negative_control",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/na- -> not_found",
+   "correct": true,
+   "ms": 797.6627080934122
+  },
+  {
+   "id": "H09",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 146.51654206681997
+  },
+  {
+   "id": "H10",
+   "category": "normalization_negative_control",
+   "expected": "clean",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": true,
+   "ms": 122.87908291909844
+  },
+  {
+   "id": "I01",
+   "category": "retraction",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": true,
+   "ms": 3475.773875019513
+  },
+  {
+   "id": "I02",
+   "category": "retraction",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 1306.621291092597
+  },
+  {
+   "id": "I03",
+   "category": "retraction",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 14281.567415921018
+  },
+  {
+   "id": "K03",
+   "category": "non_article_doi",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.2066670460626483
+  },
+  {
+   "id": "K04",
+   "category": "non_article_doi",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "identifier_format: Invalid ClinicalTrials.gov identifier",
+   "correct": true,
+   "ms": 1.0426250519230962
+  },
+  {
+   "id": "L01",
+   "category": "bibliographic_detail",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "page_range: Impossible page range",
+   "correct": true,
+   "ms": 16205.093291937374
+  },
+  {
+   "id": "L02",
+   "category": "bibliographic_detail",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.194083015434444
+  },
+  {
+   "id": "L03",
+   "category": "bibliographic_detail",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 162.73562493734062
+  },
+  {
+   "id": "L04",
+   "category": "bibliographic_detail",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 191.54791592154652
+  },
+  {
+   "id": "L05",
+   "category": "bibliographic_detail",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 1.4023330295458436
+  },
+  {
+   "id": "L06",
+   "category": "bibliographic_detail",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 94.4298340473324
+  },
+  {
+   "id": "M01",
+   "category": "internal_consistency",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 9135.088792070746
+  },
+  {
+   "id": "M02",
+   "category": "internal_consistency",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/nature14539 -> mismatch",
+   "correct": true,
+   "ms": 158.81062496919185
+  },
+  {
+   "id": "M03",
+   "category": "internal_consistency",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": true,
+   "ms": 387.9902920452878
+  },
+  {
+   "id": "M04",
+   "category": "internal_consistency",
+   "expected": "flag",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 22.8610000340268
+  },
+  {
+   "id": "M05",
+   "category": "internal_consistency",
+   "expected": "clean",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": false,
+   "ms": 5789.367374964058
+  },
+  {
+   "id": "N01",
+   "category": "adversarial",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/nature14539 -> mismatch",
+   "correct": true,
+   "ms": 479.95237505529076
+  },
+  {
+   "id": "N02",
+   "category": "adversarial",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 120.78741693403572
+  },
+  {
+   "id": "N03",
+   "category": "adversarial",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1234/fake.2024.001 -> not_found",
+   "correct": true,
+   "ms": 3151.032124995254
+  },
+  {
+   "id": "N05",
+   "category": "adversarial",
+   "expected": "flag",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 125.95445907209069
+  },
+  {
+   "id": "N06",
+   "category": "adversarial",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/nature14539 -> mismatch",
+   "correct": true,
+   "ms": 8194.467207998969
+  },
+  {
+   "id": "O01",
+   "category": "legitimately_unverifiable",
+   "expected": "unverifiable",
+   "got": "clean",
+   "reason": "identifiers resolved, nothing contradicted",
+   "correct": false,
+   "ms": 104.21858297195286
+  },
+  {
+   "id": "O02",
+   "category": "legitimately_unverifiable",
+   "expected": "unverifiable",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": true,
+   "ms": 2.368499990552664
+  },
+  {
+   "id": "O03",
+   "category": "legitimately_unverifiable",
+   "expected": "unverifiable",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": true,
+   "ms": 1.982124987989664
+  },
+  {
+   "id": "O05",
+   "category": "legitimately_unverifiable",
+   "expected": "unverifiable",
+   "got": "unverifiable",
+   "reason": "no identifier extracted; nothing to check",
+   "correct": true,
+   "ms": 7245.589999947697
+  },
+  {
+   "id": "P01",
+   "category": "end_to_end",
+   "expected": "flag",
+   "got": "flag",
+   "reason": "doi 10.1038/s41591-023-02287-1 -> not_found",
+   "correct": true,
+   "ms": 17293.900207965635
+  },
+  {
+   "id": "P02",
+   "category": "end_to_end",
+   "expected": "clean",
+   "got": "flag",
+   "reason": "cited source does not support the claim",
+   "correct": false,
+   "ms": 16644.638416939415
+  }
+ ]
+}

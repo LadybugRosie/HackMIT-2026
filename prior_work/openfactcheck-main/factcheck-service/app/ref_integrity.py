@@ -93,7 +93,7 @@ class URLResult:
 # e.g. 10.1016/S0140-6736(20)31142-9 (Lancet-style DOIs)
 DOI_PATTERN = re.compile(
     r'\b(?:doi[:\s]*|https?://(?:dx\.)?doi\.org/)?'
-    r'(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)',
+    r'(10\.\d{4,9}/[-._;()/:<>A-Za-z0-9]+)',
     re.IGNORECASE
 )
 
@@ -350,7 +350,7 @@ async def _fetch_datacite(client: httpx.AsyncClient, doi: str) -> Tuple[Optional
 
 
 # Full-string DOI syntax: 10.<registrant: 4-9 digits>/<suffix>
-_DOI_SYNTAX = re.compile(r'^10\.\d{4,9}/[-._;()/:A-Za-z0-9]+$', re.IGNORECASE)
+_DOI_SYNTAX = re.compile(r'^10\.\d{4,9}/[-._;()/:<>A-Za-z0-9]+$', re.IGNORECASE)
 
 
 def _is_valid_doi_format(doi: str) -> bool:

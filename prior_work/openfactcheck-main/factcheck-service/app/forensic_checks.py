@@ -309,18 +309,126 @@ def run_dangling_refs(text: str) -> List[Dict[str, Any]]:
 
 
 # ── orchestrator (text-only deterministic checks) ────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Bibliographic arithmetic and identifier FORMAT validation.
+#
+# Both are deterministic and offline. They are deliberately NEGATIVE-ONLY: they
+# report an identifier that cannot possibly be well-formed, and never report one
+# as good. A format-valid identifier still has to be resolved against a registry
+# before anything may be called verified, so passing these checks says nothing.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# A bare 'N-M' is not a page range: report numbers ('memorandum No. 44-12'),
+# model numbers and date fragments all share the shape. Require an explicit
+# pagination context, so a miss is possible but a false accusation is not.
+_PAGE_RANGE_RE = re.compile(
+    r'(?:pp?\.\s*|pages\s+|\d+\s*\(\s*[\dA-Za-z]+\s*\)\s*,\s*)'
+    r'(\d{1,6})\s*[-–—]\s*(\d{1,6})\b',
+    re.IGNORECASE,
+)
+
+
+def run_page_ranges(text: str) -> List[Dict[str, Any]]:
+    """Start page after end page is impossible. Pure arithmetic."""
+    out: List[Dict[str, Any]] = []
+    for m in _PAGE_RANGE_RE.finditer(text):
+        start, end = int(m.group(1)), int(m.group(2))
+        # Abbreviated end pages are conventional: 436-44 means 436-444, and
+        # 1735-80 means 1735-1780. Only compare when the end page has at least
+        # as many digits as the start, otherwise the comparison is meaningless.
+        if len(m.group(2)) < len(m.group(1)):
+            continue
+        if start > end:
+            out.append(_finding(
+                "page_range", "error", "Impossible page range",
+                f"Start page {start} is after end page {end}.",
+                snippet=_ctx(text, m.start(), m.end()),
+                start_page=start, end_page=end,
+            ))
+    return out
+
+
+_ARXIV_NEW_RE = re.compile(r'\barxiv[:\s]\s*(\d{4})\.(\d{4,5})(v\d+)?\b', re.IGNORECASE)
+_ISBN_RE = re.compile(r'\bISBN[:\s]*((?:97[89][-\s]?)?[\d][-\s\dxX]{8,20})', re.IGNORECASE)
+_PMID_RE = re.compile(r'\bPMID[:\s]*([0-9]{1,15})\b', re.IGNORECASE)
+_NCT_RE = re.compile(r'\b(NCT\d{1,12})\b', re.IGNORECASE)
+_PMCID_AS_DOI_RE = re.compile(r'doi\.org/(PMC\d+)', re.IGNORECASE)
+_ISSN_AS_DOI_RE = re.compile(r'\bdoi[:\s]+(\d{4}-\d{3}[\dxX])\b', re.IGNORECASE)
+
+
+def _isbn13_ok(digits: str) -> bool:
+    if len(digits) != 13 or not digits.isdigit():
+        return False
+    total = sum((1 if i % 2 == 0 else 3) * int(d) for i, d in enumerate(digits))
+    return total % 10 == 0
+
+
+def run_identifier_formats(text: str) -> List[Dict[str, Any]]:
+    """Flag identifiers that are structurally impossible. Never asserts validity."""
+    out: List[Dict[str, Any]] = []
+
+    for m in _ARXIV_NEW_RE.finditer(text):
+        yy, mm = m.group(1)[:2], int(m.group(1)[2:])
+        if not (1 <= mm <= 12):
+            out.append(_finding(
+                "identifier_format", "error", "Invalid arXiv identifier",
+                f"arXiv IDs encode YYMM; month {mm:02d} does not exist.",
+                snippet=_ctx(text, m.start(), m.end()), identifier=m.group(0)))
+
+    for m in _ISBN_RE.finditer(text):
+        raw = re.sub(r'[-\s]', '', m.group(1))
+        if len(raw) == 13 and raw.isdigit() and not _isbn13_ok(raw):
+            out.append(_finding(
+                "identifier_format", "error", "Invalid ISBN checksum",
+                f"ISBN-13 {raw} fails the mod-10 check-digit test.",
+                snippet=_ctx(text, m.start(), m.end()), identifier=raw))
+
+    for m in _PMID_RE.finditer(text):
+        pmid = m.group(1)
+        if pmid.startswith("0") or len(pmid) > 8:
+            out.append(_finding(
+                "identifier_format", "error", "Invalid PMID",
+                "PMIDs are positive integers of at most 8 digits with no leading zeros.",
+                snippet=_ctx(text, m.start(), m.end()), identifier=pmid))
+
+    for m in _NCT_RE.finditer(text):
+        nct = m.group(1).upper()
+        if len(nct) != 11:
+            out.append(_finding(
+                "identifier_format", "error", "Invalid ClinicalTrials.gov identifier",
+                f"NCT numbers are 'NCT' followed by 8 digits; got {len(nct) - 3}.",
+                snippet=_ctx(text, m.start(), m.end()), identifier=nct))
+
+    for m in _PMCID_AS_DOI_RE.finditer(text):
+        out.append(_finding(
+            "identifier_format", "error", "PMCID used as a DOI",
+            f"{m.group(1)} is a PubMed Central ID; it will not resolve via doi.org.",
+            snippet=_ctx(text, m.start(), m.end()), identifier=m.group(1)))
+
+    for m in _ISSN_AS_DOI_RE.finditer(text):
+        out.append(_finding(
+            "identifier_format", "error", "ISSN used as a DOI",
+            f"{m.group(1)} is an ISSN (a journal identifier), not a DOI.",
+            snippet=_ctx(text, m.start(), m.end()), identifier=m.group(1)))
+
+    return out
+
+
 def run_forensic_text_checks(text: str) -> Dict[str, Any]:
     if not settings.ENABLE_FORENSIC_CHECKS or not text:
         return {"findings": [], "checks_run": [], "summary": {}}
     findings: List[Dict[str, Any]] = []
     for name, fn in (("statcheck", run_statcheck),
                      ("grim", run_grim),
-                     ("dangling_ref", run_dangling_refs)):
+                     ("dangling_ref", run_dangling_refs),
+                     ("page_range", run_page_ranges),
+                     ("identifier_format", run_identifier_formats)):
         try:
             findings.extend(fn(text))
         except Exception as e:  # noqa: BLE001
             logger.debug(f"forensic check {name} failed: {e}")
-    return _report(findings, ["statcheck", "grim", "dangling_ref"])
+    return _report(findings, ["statcheck", "grim", "dangling_ref",
+                              "page_range", "identifier_format"])
 
 
 def retraction_findings(citation_matrix: Optional[List[Any]]) -> List[Dict[str, Any]]:
