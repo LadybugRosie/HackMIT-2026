@@ -8,6 +8,7 @@ import CertificateCard from '../../components/CertificateCard.vue'
 import IntegrityPanel from '../../components/IntegrityPanel.vue'
 import PlaybackViewer from '../../components/PlaybackViewer.vue'
 import CitationReport from '../../components/CitationReport.vue'
+import SimilarityReport from '../../components/SimilarityReport.vue'
 
 const route = useRoute()
 const sub = ref(null)
@@ -27,6 +28,11 @@ async function rerunFactcheck() {
   await api.post(`/api/factcheck/submissions/${sub.value.submission_id}/run`)
   sub.value.factcheck_status = 'pending'
   pollPending()
+}
+async function recomputeSimilarity() {
+  sub.value.similarity_status = 'pending'
+  await api.post(`/api/similarity/assignments/${sub.value.assignment_id}/recompute`)
+  sub.value = await api.get(`/api/submissions/${sub.value.submission_id}`)
 }
 onBeforeUnmount(() => clearInterval(poll))
 const error = ref('')
@@ -50,19 +56,23 @@ async function openPlayback() {
   if (!playback.value) playback.value = await api.get(`/api/review/submissions/${sub.value.submission_id}/playback`)
 }
 
-/** Text as runs, external spans (code-point offsets from the certificate's integrity claims) highlighted. */
+/**
+ * Text as runs with two overlays (code-point offsets): pasted-from-outside spans from the
+ * certificate's integrity claims, and passages shared with classmates from the similarity result.
+ */
 const runs = computed(() => {
   if (!sub.value) return []
   const cps = [...sub.value.content]
-  const spans = [...(sub.value.integrity?.ext_spans ?? [])].sort((a, b) => a.start - b.start)
+  const ext = new Uint8Array(cps.length)
+  const sim = new Uint8Array(cps.length)
+  for (const s of sub.value.integrity?.ext_spans ?? []) ext.fill(1, s.start, s.end)
+  for (const m of sub.value.similarity?.matches ?? []) for (const s of m.segments) sim.fill(1, s.a_start, s.a_end)
   const out = []
-  let pos = 0
-  for (const s of spans) {
-    if (s.start > pos) out.push({ ext: false, text: cps.slice(pos, s.start).join('') })
-    out.push({ ext: true, text: cps.slice(s.start, s.end).join('') })
-    pos = s.end
+  for (let i = 0; i < cps.length; i++) {
+    const last = out[out.length - 1]
+    if (last && last.ext === !!ext[i] && last.sim === !!sim[i]) last.text += cps[i]
+    else out.push({ ext: !!ext[i], sim: !!sim[i], text: cps[i] })
   }
-  if (pos < cps.length) out.push({ ext: false, text: cps.slice(pos).join('') })
   return out
 })
 
@@ -105,10 +115,10 @@ async function saveGrade(andReturn = false) {
         <div class="tabs">
           <button :class="{ on: tab === 'text' }" @click="tab = 'text'">Submitted text</button>
           <button :class="{ on: tab === 'playback' }" @click="openPlayback">Playback</button>
-          <span class="legend muted small" v-if="tab === 'text'"><i class="sw"></i> pasted from outside</span>
+          <span class="legend muted small" v-if="tab === 'text'"><i class="sw"></i> pasted from outside <i class="sw sim"></i> shared with a classmate</span>
         </div>
         <section v-if="tab === 'text'" class="card text">
-          <p class="pre"><span v-for="(r, i) in runs" :key="i" :class="{ ext: r.ext }">{{ r.text }}</span></p>
+          <p class="pre"><span v-for="(r, i) in runs" :key="i" :class="{ ext: r.ext, sim: r.sim }">{{ r.text }}</span></p>
         </section>
         <section v-else class="card">
           <PlaybackViewer v-if="playback" :payload="playback" />
@@ -133,10 +143,7 @@ async function saveGrade(andReturn = false) {
         <CertificateCard v-if="sub.certificate" :certificate="sub.certificate" :verify="verify" :ledger="ledger" />
         <div v-if="sub.integrity" class="card"><IntegrityPanel :integrity="sub.integrity" /></div>
         <CitationReport :status="sub.factcheck_status" :result="sub.factcheck" can-rerun @rerun="rerunFactcheck" />
-        <section class="card">
-          <h3>Similarity <span class="pill" :class="sub.similarity_status === 'done' ? 'good' : 'muted'">{{ sub.similarity_status }}</span></h3>
-          <p class="muted small">In-class similarity arrives with Stage 6.</p>
-        </section>
+        <SimilarityReport :status="sub.similarity_status" :result="sub.similarity" can-recompute @recompute="recomputeSimilarity" />
       </aside>
     </div>
   </template>
@@ -153,9 +160,11 @@ async function saveGrade(andReturn = false) {
 .tabs button { background: transparent; border-color: transparent; color: var(--muted); }
 .tabs button.on { background: var(--surface); border-color: var(--border); color: var(--text); font-weight: 600; }
 .legend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
-.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--bad) 30%, transparent); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: color-mix(in srgb, var(--bad) 30%, transparent); margin-left: 8px; }
+.sw.sim { background: transparent; border-bottom: 2px dashed var(--warn); height: 8px; }
 .text .pre { white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 15px; }
 .ext { background: color-mix(in srgb, var(--bad) 30%, transparent); border-radius: 2px; }
+.sim { border-bottom: 2px dashed var(--warn); }
 .grade h3, .side h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .row label { display: flex; align-items: center; gap: 8px; }

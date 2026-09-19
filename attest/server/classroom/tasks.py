@@ -1,5 +1,4 @@
-"""Post-submit analyses run in the background so submit never waits on the network.
-Stage 6 adds similarity; until then a pending similarity check is marked skipped."""
+"""Post-submit analyses run in the background so submit never waits on the network."""
 from __future__ import annotations
 
 import json
@@ -7,6 +6,8 @@ import logging
 
 from .db import Db
 from .factcheck import run_factcheck
+from .settings import settings
+from .similarity import run_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -27,4 +28,10 @@ def run_post_submit(db: Db, store, submission_id: str, resolver=None) -> None:
                 logger.exception("factcheck failed for %s", submission_id)
                 db.exec("UPDATE submissions SET factcheck_status = 'error' WHERE submission_id = ?", (submission_id,))
     if row["similarity_status"] == "pending":
-        db.exec("UPDATE submissions SET similarity_status = 'skipped' WHERE submission_id = ?", (submission_id,))
+        try:
+            result = run_similarity(db, submission_id, settings.SIMILARITY_K, settings.SIMILARITY_W)
+            db.exec("UPDATE submissions SET similarity_status = 'done', similarity_json = ? WHERE submission_id = ?",
+                    (json.dumps(result), submission_id))
+        except Exception:
+            logger.exception("similarity failed for %s", submission_id)
+            db.exec("UPDATE submissions SET similarity_status = 'error' WHERE submission_id = ?", (submission_id,))
