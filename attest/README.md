@@ -66,6 +66,32 @@ and warnings are phrased neutrally. Results ride along on every `/v1/ingest` res
 are embedded in the certificate's `claims.integrity`. Set `ATTEST_STORE=sqlite` to persist
 sessions across restarts.
 
+## The classroom around the engine (`server/classroom/`, `web/src/pages/`)
+
+A sparse teaching platform built *around* attest, in the same server and SQLite file:
+
+- **Roles**: students and teachers (email + password; stdlib scrypt, hashed bearer tokens).
+- **Classes & assignments**: 6-letter join codes, assignments with per-check settings.
+- **Attested writing**: the student's editor is bound to one ledger session per submission
+  (`doc_id = submission_id`). Engine routes for bound sessions are guarded (owner writes,
+  teacher reads); the public engine demo at `/attest` stays open.
+- **Submit = the hard guarantee**: the server rebuilds the certificate from *its own* ledger copy
+  and refuses unless it replays to exactly the submitted text (`409 not_bound | wrong_session |
+  hash_mismatch`). No client claim is stored.
+- **Review**: highlighted external spans, server re-verification, ledger download, process
+  signals, grade + return, and **session playback** built from the ledger alone.
+- **Citations & links**: DOIs resolved via doi.org's registration-agency lookup then Crossref or
+  DataCite for metadata; URL reachability; author-year cites paired with the reference list and
+  reported as *unverifiable*, never *fabricated*.
+- **In-class similarity**: winnowing fingerprints (5-word grams, window 4, crc32), prompt text
+  excluded, matched passages recovered on both sides and mirrored across submissions.
+
+```bash
+cd server && .venv/bin/uvicorn classroom.app:app --port 8090 --reload   # API + engine
+cd web && pnpm dev                                                       # http://localhost:9100
+cd server && .venv/bin/python -m classroom.seed                          # demo accounts + Ben's essay
+```
+
 ## Layout
 
 ```
