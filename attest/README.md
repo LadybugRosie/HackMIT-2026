@@ -1,6 +1,6 @@
 # attest — a verifiable human-writing ledger
 
-Built at HackMIT 2026. `attest` records how a document was written as a **tamper-evident,
+`attest` records how a document was written as a **tamper-evident,
 hash-chained event ledger**, binds that ledger to the exact submitted text, and issues a
 portable **Proof-of-Writing certificate** anyone can verify offline. Later stages add
 device- and hardware-rooted attestation (Secure Enclave, HID-level keystroke origin),

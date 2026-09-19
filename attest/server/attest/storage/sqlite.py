@@ -24,6 +24,7 @@ class SqliteStore:
     def __init__(self, path: str) -> None:
         self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")  # the classroom app writes to the same file
         self._conn.executescript(_SCHEMA)
         self._lock = threading.Lock()
 

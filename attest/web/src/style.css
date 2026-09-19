@@ -11,9 +11,27 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif; }
-#app { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-header h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.01em; }
-header p { margin: 0 0 20px; max-width: 70ch; }
-main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+.container.wide { max-width: 1200px; }
+h1 { font-size: 24px; letter-spacing: -0.01em; margin: 0 0 12px; }
+h2 { font-size: 18px; margin: 0 0 10px; }
+a { color: var(--accent); }
 .muted { color: var(--muted); }
+.error { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); padding: 8px 10px; border-radius: 6px; font-size: 14px; }
+
+/* forms */
+.auth-card { max-width: 420px; margin: 40px auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: grid; gap: 12px; }
+.auth-card h1 { margin-bottom: 4px; }
+.auth-card .alt { margin: 4px 0 0; font-size: 14px; }
+label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+input, textarea, select { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 9px 10px; }
+input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* generic pieces */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; font-weight: 600; white-space: nowrap; }
+.good { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
