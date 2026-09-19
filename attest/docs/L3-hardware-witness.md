@@ -1,6 +1,6 @@
 # Plan: Stage 4 — L3, the hardware witness
 
-*Status: proposal for review. Nothing in this document is built yet.*
+*Status: built (Stages B–D, F) — see README §"The hardware witness". Deviations from this plan: HID batches use a dedicated `POST /attest-hid` route rather than `kind:"hid"` in `/attest`; segments are numbered by Unix seconds at start; text arriving in one `type` event without key events counts as keystroke-equivalents (§4.4 addition found in live testing); witness checks are informational in verify output unless the certificate claims L3. Stage A (physical typing + injector) and Stage E (demo recording) need a person at the keyboard.*
 
 ---
 

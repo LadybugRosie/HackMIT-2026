@@ -25,7 +25,7 @@ questions that usually get conflated:
 | **L0** | Ledger chain is internally valid |
 | **L1** | + certificate binds the ledger to the submitted text (replay reproduces it) — *Stage 1* |
 | **L2** | + the final chain head signed by a key that cannot leave the student's device (Secure Enclave / WebAuthn), with RFC 3161 trusted timestamps at checkpoints — *Stage 3, built* |
-| **L3** | + keystrokes attested as hardware-originated by a Secure-Enclave-signed HID helper — *Stage 4, not built* |
+| **L3** | + a hardware witness below the browser saw a physical key-down for every keystroke the editor recorded — *Stage 4, built; labelled "software witness", see below* |
 
 `unknown`/`could not check` always means *not verified*, never *clean*.
 
@@ -108,6 +108,44 @@ stylometry). And the certificate itself is not yet signed by the server, so an o
 trusts the embedded public key because it trusts the certificate's source; an issuer signature is
 the natural next step.
 
+## The hardware witness (Stage 4 — L3)
+
+L2 still cannot tell a finger on a key from `dispatchEvent`, an AppleScript `keystroke`, or a
+macro tool. `native/attest-hid` is a small Swift helper that listens to raw HID reports via
+IOHIDManager — below the browser, where synthetic events never appear — and every 5 s emits a
+signed, hash-chained statement: *"between t₀ and t₁ I saw N physical key-downs from these devices;
+the machine had been idle for I ms."* Statements are signed by a Secure Enclave key enrolled under
+the student's account, anchored to a real ledger head at the start of each segment and to the
+final chain root at the seal, and relayed by the browser (the helper is passive: no tokens, no
+outbound connections). It never records *which* keys.
+
+At seal the server lines the two streams up window by window. Hardware may see **more**
+key-downs than the editor (shortcuts, other apps) but never **fewer**; a window where the editor
+recorded ≥ 8 keystrokes and the hardware saw fewer than half is an *injection window*. Text that
+arrived in a single `type` event without key events (`insertText`, dictation, a macro) counts as
+one keystroke-equivalent per extra character, so it too must be matched by hardware.
+
+```
+L3  =  L2  +  gapless witness chain anchored to this ledger at both ends
+           +  every ledger keystroke inside a witnessed window
+           +  no injection window
+```
+
+Otherwise the certificate stays at **L2 and says why** (`claims.attestation.hid.reasons`), the
+review page shows the offending window, and playback paints a red band over it. External
+keyboards are reported (`devices: […]`) but not penalised.
+
+**Why "software witness".** The signatures prove the statements are unaltered and from this Mac's
+Enclave; the anchors prove they are about this ledger. What nothing can prove on macOS is that the
+program writing them is *our* helper — Apple's App Attest exists only for iOS/App Store apps, and
+the Mac App Store sandbox forbids Input Monitoring. A student could write a fake helper that
+emits counts matching their injection script. Mitigations: ad-hoc/Developer-ID signing, the
+helper's own code hash in every statement pinned server-side (`ATTEST_HID_TRUSTED_CDHASHES`), and
+the enrolment binding to an authenticated, L2-verified session. Net: cheating past L3 means custom
+native software, run unsigned on your own Mac, coordinated live with an injection script — a
+material bar above the one-line attacks, but not L2's "the OS itself signs". Full design and
+trust analysis: `docs/L3-hardware-witness.md`.
+
 ## The classroom around the engine (`server/classroom/`, `web/src/pages/`)
 
 A sparse teaching platform built *around* attest, in the same server and SQLite file:
@@ -139,8 +177,8 @@ cd server && .venv/bin/python -m classroom.seed                          # demo 
 
 ```
 server/    FastAPI ledger service (Python 3.14)        verifier/  stdlib-only offline verifier CLI
-web/       Vue 3 + Tiptap capture surface (port 9100)  tools/     adversary/demo scripts
-native/    Swift HID + Secure Enclave helper (Stage 4) zk/        zkVM proof (Stage 6)
+web/       Vue 3 + Tiptap capture surface (port 9100)  docs/      design notes (L3 plan)
+native/    attest-hid: Swift HID witness + Secure Enclave key (Stage 4, L3)
 ```
 
 ## Run locally
@@ -166,7 +204,8 @@ python3 verifier/attest_verify.py attest-cert.json essay.txt --events attest-led
 Everything in this directory was written during HackMIT 2026. Open-source dependencies:
 FastAPI, Uvicorn, Pydantic, pydantic-settings, pytest, Hypothesis, httpx (server);
 Vue 3, Vite, Tiptap v2 / ProseMirror (web); `cryptography` is used **only in tests** as a
-reference implementation to cross-check the hand-written ECDSA. The offline verifier and all
+reference implementation to cross-check the hand-written ECDSA. The native helper uses Apple
+frameworks only (IOKit, Security, Network, CryptoKit). The offline verifier and all
 attestation verification use only the Python standard library. FreeTSA (freetsa.org) is a
 public timestamp service, not code. Code under `../prior_work/` is pre-hackathon reference material and is
 **not** used by this project.
