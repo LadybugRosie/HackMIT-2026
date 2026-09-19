@@ -16,7 +16,8 @@ from attest.settings import Settings as AttestSettings
 from . import __version__
 from .db import Db
 from .deps import guard_ingest_body, guard_session_path
-from .routers import assignments, auth, classes, dashboard, review, submissions
+from .factcheck import CachedResolver, HttpResolver
+from .routers import assignments, auth, classes, dashboard, factcheck, review, submissions
 from .settings import ClassroomSettings, settings as default_settings
 
 
@@ -27,6 +28,8 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
     app.state.settings = cfg
     app.state.db = Db(cfg.DB_PATH)  # creates the data directory; the store opens the same file next
     app.state.store = make_store(AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS))
+    # Tests swap this for a fake; production resolves against Crossref/doi.org with a 7-day cache.
+    app.state.resolver = CachedResolver(HttpResolver(cfg.HTTP_TIMEOUT_S, cfg.CROSSREF_MAILTO), app.state.db)
 
     # Engine routes: sessions bound to a submission are guarded; unbound demo sessions stay public.
     app.include_router(attest_session.router, dependencies=[Depends(guard_session_path)])
@@ -34,7 +37,7 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
     app.include_router(attest_ingest.router, dependencies=[Depends(guard_ingest_body)])
     app.include_router(attest_verify.router)  # pure; nothing to protect
 
-    for r in (auth, dashboard, classes, assignments, submissions, review):
+    for r in (auth, dashboard, classes, assignments, submissions, review, factcheck):
         app.include_router(r.router)
 
     @app.get("/healthz")

@@ -84,7 +84,8 @@ def test_submit_binds_text_and_stores_certificate(capp, world):
     assert body["submission"]["integrity"]["mix"]["typed"] == 1.0
     assert body["submission"]["factcheck_status"] == "pending"  # response is built before the background task
     after = capp.get(f"/api/submissions/{sub['submission_id']}", headers=auth(s["token"])).json()
-    assert after["factcheck_status"] == "skipped"  # placeholder task ran once the response was sent
+    assert after["factcheck_status"] == "done"  # background task ran once the response was sent
+    assert after["factcheck"]["summary"]["total"] == 0  # "hello world" cites nothing, so no network was needed
 
     # Locked: no more ingest, no re-submit, no draft edits; certificate persisted server-side.
     more = build_chain(events[-1]["hash"], typed("!", start_pos=len(text)), start_seq=len(events))

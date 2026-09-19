@@ -1,7 +1,7 @@
 import json
 import secrets
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from attest.certificate import build_certificate, verify_certificate
 from attest.chain import genesis_hash, sha256_hex
@@ -86,8 +86,8 @@ def ledger(submission_id: str, db: Db = Depends(get_db), store=Depends(get_store
 
 
 @router.post("/{submission_id}/submit")
-def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTasks, db: Db = Depends(get_db),
-           store=Depends(get_store), user: dict = Depends(require_role("student"))) -> dict:
+def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTasks, request: Request,
+           db: Db = Depends(get_db), store=Depends(get_store), user: dict = Depends(require_role("student"))) -> dict:
     """The hard guarantee: the certificate is rebuilt from the server's own ledger copy and must bind
     to exactly the submitted text. The client's certificate is compared, never stored."""
     row = submission_or_404(db, submission_id, user)
@@ -125,7 +125,7 @@ def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTas
         (payload.text, now, json.dumps(cert_dict), json.dumps(cert_dict["claims"].get("integrity")),
          "pending" if settings.get("factcheck", True) else "skipped",
          "pending" if settings.get("similarity", True) else "skipped", now, submission_id))
-    background.add_task(run_post_submit, db, store, submission_id)
+    background.add_task(run_post_submit, db, store, submission_id, request.app.state.resolver)
 
     return {
         "submission": submission_out(db, db.one("SELECT * FROM submissions WHERE submission_id = ?", (submission_id,)), user),

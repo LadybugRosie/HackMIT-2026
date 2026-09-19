@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '../../lib/api.js'
 import { fmtDate } from '../../lib/format.js'
@@ -7,11 +7,28 @@ import StatusChip from '../../components/StatusChip.vue'
 import CertificateCard from '../../components/CertificateCard.vue'
 import IntegrityPanel from '../../components/IntegrityPanel.vue'
 import PlaybackViewer from '../../components/PlaybackViewer.vue'
+import CitationReport from '../../components/CitationReport.vue'
 
 const route = useRoute()
 const sub = ref(null)
 const playback = ref(null)
 const tab = ref('text')
+let poll = null
+
+function pollPending() {
+  clearInterval(poll)
+  poll = setInterval(async () => {
+    if (!sub.value) return
+    if (sub.value.factcheck_status !== 'pending' && sub.value.similarity_status !== 'pending') return clearInterval(poll)
+    try { sub.value = await api.get(`/api/submissions/${sub.value.submission_id}`) } catch {}
+  }, 3000)
+}
+async function rerunFactcheck() {
+  await api.post(`/api/factcheck/submissions/${sub.value.submission_id}/run`)
+  sub.value.factcheck_status = 'pending'
+  pollPending()
+}
+onBeforeUnmount(() => clearInterval(poll))
 const error = ref('')
 const grade = ref('')
 const feedback = ref('')
@@ -23,6 +40,7 @@ async function load() {
     sub.value = await api.get(`/api/submissions/${route.params.submissionId}`)
     grade.value = sub.value.grade ?? ''
     feedback.value = sub.value.feedback ?? ''
+    pollPending()
   } catch (e) { error.value = e.message }
 }
 onMounted(load)
@@ -114,10 +132,7 @@ async function saveGrade(andReturn = false) {
       <aside class="side">
         <CertificateCard v-if="sub.certificate" :certificate="sub.certificate" :verify="verify" :ledger="ledger" />
         <div v-if="sub.integrity" class="card"><IntegrityPanel :integrity="sub.integrity" /></div>
-        <section class="card">
-          <h3>Citations <span class="pill" :class="sub.factcheck_status === 'done' ? 'good' : 'muted'">{{ sub.factcheck_status }}</span></h3>
-          <p class="muted small">Citation and link verification arrives with Stage 5.</p>
-        </section>
+        <CitationReport :status="sub.factcheck_status" :result="sub.factcheck" can-rerun @rerun="rerunFactcheck" />
         <section class="card">
           <h3>Similarity <span class="pill" :class="sub.similarity_status === 'done' ? 'good' : 'muted'">{{ sub.similarity_status }}</span></h3>
           <p class="muted small">In-class similarity arrives with Stage 6.</p>
