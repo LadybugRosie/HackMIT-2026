@@ -1,10 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+import secrets
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+
+from attest.certificate import build_certificate, verify_certificate
+from attest.chain import genesis_hash, sha256_hex
+from attest.models import Certificate
+from attest.replay import replay
+from attest.storage.base import SessionRecord
 
 from ..db import Db
-from ..deps import class_member_or_404, current_user, get_db, require_role, submission_or_404
+from ..deps import class_member_or_404, current_user, get_db, get_store, require_role, submission_or_404
 from ..ids import new_id, now_ms
-from ..schemas import DraftRequest, GradeRequest, StartSubmissionRequest, SubmissionOut
-from ..views import assignment_row, submission_out
+from ..schemas import DraftRequest, GradeRequest, LedgerInfo, StartSubmissionRequest, SubmissionOut, SubmitRequest
+from ..tasks import run_post_submit
+from ..views import assignment_row, loads, submission_out
 
 router = APIRouter(prefix="/api/submissions", tags=["submissions"])
 
@@ -48,6 +58,81 @@ def save_draft(submission_id: str, payload: DraftRequest, db: Db = Depends(get_d
         raise HTTPException(409, {"code": "not_draft", "detail": "submission is no longer editable"})
     db.exec("UPDATE submissions SET content = ?, updated_ms = ? WHERE submission_id = ?", (payload.content, now_ms(), submission_id))
     return {"ok": True}
+
+
+@router.post("/{submission_id}/ledger", response_model=LedgerInfo)
+def ledger(submission_id: str, db: Db = Depends(get_db), store=Depends(get_store),
+           user: dict = Depends(require_role("student"))) -> LedgerInfo:
+    """Create (once) or resume the attest ledger session bound to this submission. The session's
+    doc_id is the submission_id, which is what `submit` later checks — a session started any other
+    way can never certify a submission."""
+    row = submission_or_404(db, submission_id, user)
+    if row["student_id"] != user["user_id"]:
+        raise HTTPException(404, "submission not found")
+    session_id = row["ledger_session_id"]
+    if session_id is None:
+        if row["status"] != "draft":
+            raise HTTPException(409, {"code": "not_draft", "detail": "submission is no longer editable"})
+        session_id, nonce = new_id(), secrets.token_hex(16)
+        genesis = genesis_hash(session_id, nonce)
+        store.create(SessionRecord(session_id=session_id, server_nonce=nonce, genesis=genesis, created_ms=now_ms(),
+                                   doc_id=submission_id, head=genesis))
+        db.exec("UPDATE submissions SET ledger_session_id = ?, updated_ms = ? WHERE submission_id = ? AND ledger_session_id IS NULL",
+                (session_id, now_ms(), submission_id))
+        session_id = db.one("SELECT ledger_session_id FROM submissions WHERE submission_id = ?", (submission_id,))["ledger_session_id"]
+    rec = store.get(session_id)
+    return LedgerInfo(session_id=rec.session_id, genesis=rec.genesis, chain_head=rec.head, event_count=rec.event_count,
+                      text=replay(rec.events), finalized=rec.certificate is not None)
+
+
+@router.post("/{submission_id}/submit")
+def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTasks, db: Db = Depends(get_db),
+           store=Depends(get_store), user: dict = Depends(require_role("student"))) -> dict:
+    """The hard guarantee: the certificate is rebuilt from the server's own ledger copy and must bind
+    to exactly the submitted text. The client's certificate is compared, never stored."""
+    row = submission_or_404(db, submission_id, user)
+    if row["student_id"] != user["user_id"]:
+        raise HTTPException(404, "submission not found")
+    if row["status"] != "draft":
+        raise HTTPException(409, {"code": "not_draft", "detail": "already submitted"})
+    if row["ledger_session_id"] is None or payload.session_id != row["ledger_session_id"]:
+        raise HTTPException(409, {"code": "wrong_session", "detail": "session is not the ledger bound to this submission"})
+    rec = store.get(payload.session_id)
+    if rec is None or rec.doc_id != submission_id:
+        raise HTTPException(409, {"code": "wrong_session", "detail": "session is not the ledger bound to this submission"})
+
+    if rec.certificate is None:
+        cert, reason = build_certificate(rec, payload.text)
+        if cert is None:
+            raise HTTPException(409, {"code": "not_bound", "detail": reason})
+        cert_dict = cert.model_dump()
+        store.set_certificate(rec.session_id, cert_dict)
+    else:
+        cert_dict = rec.certificate
+        if cert_dict["doc_sha256"] != sha256_hex(payload.text):
+            raise HTTPException(409, {"code": "hash_mismatch",
+                                      "detail": "the text differs from the ledger that was finalized — reload and submit again"})
+    ok, level, checks = verify_certificate(Certificate(**cert_dict), payload.text, rec.events)
+    if not ok:  # cannot happen if the store is consistent; refuse loudly rather than certify garbage
+        raise HTTPException(500, {"code": "verify_failed", "checks": [c.model_dump() for c in checks]})
+
+    a = assignment_row(db, row["assignment_id"])
+    settings = loads(a["settings_json"], {})
+    now = now_ms()
+    db.exec(
+        "UPDATE submissions SET content = ?, status = 'submitted', submitted_ms = ?, certificate_json = ?, integrity_json = ?, "
+        "factcheck_status = ?, similarity_status = ?, updated_ms = ? WHERE submission_id = ?",
+        (payload.text, now, json.dumps(cert_dict), json.dumps(cert_dict["claims"].get("integrity")),
+         "pending" if settings.get("factcheck", True) else "skipped",
+         "pending" if settings.get("similarity", True) else "skipped", now, submission_id))
+    background.add_task(run_post_submit, db, store, submission_id)
+
+    return {
+        "submission": submission_out(db, db.one("SELECT * FROM submissions WHERE submission_id = ?", (submission_id,)), user),
+        "certificate": cert_dict,
+        "verify": {"ok": ok, "assurance_level": level, "checks": [c.model_dump() for c in checks]},
+        "client_certificate_matches": (payload.certificate or {}).get("chain_root") == cert_dict["chain_root"] if payload.certificate else None,
+    }
 
 
 @router.post("/{submission_id}/grade", response_model=SubmissionOut)

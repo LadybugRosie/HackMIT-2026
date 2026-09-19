@@ -2,7 +2,7 @@
 one SQLite file. Run with `uvicorn classroom.app:app --port 8090 --reload`."""
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from attest import __version__ as attest_version
@@ -15,7 +15,8 @@ from attest.settings import Settings as AttestSettings
 
 from . import __version__
 from .db import Db
-from .routers import assignments, auth, classes, dashboard, submissions
+from .deps import guard_ingest_body, guard_session_path
+from .routers import assignments, auth, classes, dashboard, review, submissions
 from .settings import ClassroomSettings, settings as default_settings
 
 
@@ -27,12 +28,13 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
     app.state.db = Db(cfg.DB_PATH)  # creates the data directory; the store opens the same file next
     app.state.store = make_store(AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS))
 
-    app.include_router(attest_session.router)
-    app.include_router(attest_ingest.router)
-    app.include_router(attest_certificate.router)
-    app.include_router(attest_verify.router)
+    # Engine routes: sessions bound to a submission are guarded; unbound demo sessions stay public.
+    app.include_router(attest_session.router, dependencies=[Depends(guard_session_path)])
+    app.include_router(attest_certificate.router, dependencies=[Depends(guard_session_path)])
+    app.include_router(attest_ingest.router, dependencies=[Depends(guard_ingest_body)])
+    app.include_router(attest_verify.router)  # pure; nothing to protect
 
-    for r in (auth, dashboard, classes, assignments, submissions):
+    for r in (auth, dashboard, classes, assignments, submissions, review):
         app.include_router(r.router)
 
     @app.get("/healthz")

@@ -70,6 +70,49 @@ def class_member_or_404(db: Db, class_id: str, user: dict) -> dict:
     return dict(row)
 
 
+def submission_for_session(db: Db, session_id: str) -> Optional[dict]:
+    row = db.one(
+        "SELECT s.submission_id, s.student_id, s.status, c.teacher_id FROM submissions s "
+        "JOIN assignments a ON a.assignment_id = s.assignment_id JOIN classes c ON c.class_id = a.class_id "
+        "WHERE s.ledger_session_id = ?", (session_id,))
+    return dict(row) if row else None
+
+
+def guard_session_path(request: Request, user: Optional[dict] = Depends(optional_user)) -> None:
+    """Engine routes with a {session_id}: sessions bound to a submission are visible only to its
+    owner or the class teacher. Unbound sessions (the public engine demo) stay open."""
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return
+    bound = submission_for_session(request.app.state.db, session_id)
+    if bound is None:
+        return
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    if user["user_id"] not in (bound["student_id"], bound["teacher_id"]):
+        raise HTTPException(404, "unknown session")
+
+
+async def guard_ingest_body(request: Request, user: Optional[dict] = Depends(optional_user)) -> None:
+    """Only the owning student may append to a bound ledger, and only while the draft is open."""
+    try:
+        body = await request.json()  # cached by Starlette; the endpoint re-reads the same bytes
+    except ValueError:
+        return  # let the endpoint's own validation produce the 422
+    session_id = body.get("session_id") if isinstance(body, dict) else None
+    if not session_id:
+        return
+    bound = submission_for_session(request.app.state.db, session_id)
+    if bound is None:
+        return
+    if user is None:
+        raise HTTPException(401, "not signed in")
+    if bound["student_id"] != user["user_id"]:
+        raise HTTPException(404, "unknown session")
+    if bound["status"] != "draft":
+        raise HTTPException(409, {"code": "not_draft", "detail": "submission is no longer editable"})
+
+
 def submission_or_404(db: Db, submission_id: str, user: dict) -> dict:
     """Owner or the teacher of the class; 404 either way so ids cannot be enumerated."""
     row = db.one(
