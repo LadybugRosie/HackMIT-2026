@@ -1,4 +1,4 @@
-"""Stage 3 (L2): enrol a device key and sign chain heads with it.
+"""Stage 3 (L2): enroll a device key and sign chain heads with it.
 
     GET  /v1/session/{id}/enroll/options   -> PublicKeyCredentialCreationOptions (challenge kept server-side)
     POST /v1/session/{id}/enroll           <- navigator.credentials.create() result; stores the public key
@@ -74,7 +74,7 @@ def enroll(session_id: str, payload: EnrollRequest, request: Request) -> Credent
     cfg = _cfg(request)
     entry = _challenges(request).pop(session_id, None)
     if entry is None or entry[1] < time.time():
-        raise HTTPException(409, {"code": "no_challenge", "detail": "request enrol options first (challenge expired or missing)"})
+        raise HTTPException(409, {"code": "no_challenge", "detail": "request enroll options first (challenge expired or missing)"})
     try:
         cred = parse_registration(payload.attestation_object, payload.client_data_json, entry[0], cfg.WEBAUTHN_RP_ID, cfg.WEBAUTHN_ORIGINS)
     except (ValueError, KeyError, TypeError) as exc:
@@ -84,14 +84,14 @@ def enroll(session_id: str, payload: EnrollRequest, request: Request) -> Credent
     cred.update(owner=rec.owner or rec.session_id, label=payload.label, transports=payload.transports)
     request.app.state.store.add_credential(cred)
     return CredentialView(credential_id=cred["credential_id"], created_ms=cred["created_ms"], aaguid=cred["aaguid"],
-                          label=cred.get("label"), uv_at_enrol=cred["uv_at_enrol"])
+                          label=cred.get("label"), uv_at_enroll=cred["uv_at_enroll"])
 
 
 @router.get("/{session_id}/credentials", response_model=list[CredentialView])
 def credentials(session_id: str, request: Request) -> list[CredentialView]:
     rec = _session(request, session_id)
     return [CredentialView(credential_id=c["credential_id"], created_ms=c.get("created_ms", 0), aaguid=c.get("aaguid", ""),
-                           label=c.get("label"), uv_at_enrol=bool(c.get("uv_at_enrol")))
+                           label=c.get("label"), uv_at_enroll=bool(c.get("uv_at_enroll")))
             for c in request.app.state.store.list_credentials(rec.owner or rec.session_id)]
 
 

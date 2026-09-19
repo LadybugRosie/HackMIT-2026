@@ -1,6 +1,6 @@
 """WebAuthn (FIDO2) device attestation over chain heads — the L2 mechanism.
 
-Enrolment (`navigator.credentials.create`) yields a P-256 key pair whose private half lives in
+Enrollment (`navigator.credentials.create`) yields a P-256 key pair whose private half lives in
 the platform authenticator (Secure Enclave / TPM / security key) and cannot be exported. At each
 checkpoint the browser calls `navigator.credentials.get` with the chain head as the challenge;
 the authenticator signs `authenticatorData || SHA256(clientDataJSON)` and the server checks:
@@ -11,7 +11,7 @@ the authenticator signs `authenticatorData || SHA256(clientDataJSON)` and the se
 
 Attestation-statement formats (packed/tpm/apple…) are *not* verified: we request `attestation:
 "none"` because we do not need to prove the authenticator's make, only that the same key keeps
-signing. What binds a key to a person is enrolment under their account.
+signing. What binds a key to a person is enrollment under their account.
 """
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def _auth_data_header(auth_data: bytes, rp_id: Optional[str]) -> Tuple[int, int]
     return flags, sign_count
 
 
-# -- enrolment -------------------------------------------------------------------------
+# -- enrollment -------------------------------------------------------------------------
 
 def parse_registration(attestation_object_b64: str, client_data_b64: str, challenge: bytes,
                        rp_id: str, origins: Iterable[str]) -> Dict[str, Any]:
@@ -84,7 +84,7 @@ def parse_registration(attestation_object_b64: str, client_data_b64: str, challe
         "credential_id": b64url_encode(cred_id),
         "public_key": {"crv": "P-256", "x": f"{x:064x}", "y": f"{y:064x}"},
         "aaguid": aaguid, "sign_count": sign_count, "fmt": att_obj.get("fmt", "none"),
-        "uv_at_enrol": bool(flags & FLAG_UV), "origin": cd.get("origin"), "rp_id": rp_id,
+        "uv_at_enroll": bool(flags & FLAG_UV), "origin": cd.get("origin"), "rp_id": rp_id,
         "created_ms": int(time.time() * 1000),
     }
 

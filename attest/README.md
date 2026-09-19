@@ -77,7 +77,7 @@ signatures over the **same chain head**:
 | Device key (WebAuthn platform authenticator — the Mac's Secure Enclave) | *which machine*, and at the seal *that the enrolled person was present* (Touch ID) | `navigator.credentials.get` with the chain head as challenge; ECDSA-P256 over `authenticatorData ‖ SHA256(clientDataJSON)` |
 | Timestamp authority (RFC 3161, FreeTSA by default) | *no later than when* — by a clock the student does not control | server POSTs the head to the TSA, verifies the CMS signature against a pinned signer certificate, stores the token |
 
-Flow: enrol once (`/enroll/options` → Touch ID → `/enroll` stores the public key under the
+Flow: enroll once (`/enroll/options` → Touch ID → `/enroll` stores the public key under the
 owner — a user in the classroom, the session in the demo) · every ~3 min the browser signs the
 current head **silently** (`userVerification: discouraged`) · at submit it signs the final head
 **with Touch ID** (`required`) · `build_certificate` verifies every attestation over its own head,
@@ -116,7 +116,7 @@ A sparse teaching platform built *around* attest, in the same server and SQLite 
 - **Classes & assignments**: 6-letter join codes, assignments with per-check settings.
 - **Attested writing**: the student's editor is bound to one ledger session per submission
   (`doc_id = submission_id`, `owner = user_id`). Engine routes for bound sessions are guarded
-  (owner writes, teacher reads, only the owner enrols keys or signs heads); the public engine
+  (owner writes, teacher reads, only the owner enrolls keys or signs heads); the public engine
   demo at `/attest` stays open. A device key enrolled once serves all of a student's assignments.
 - **Submit = the hard guarantee**: the server rebuilds the certificate from *its own* ledger copy
   and refuses unless it replays to exactly the submitted text (`409 not_bound | wrong_session |

@@ -91,7 +91,7 @@ onBeforeUnmount(() => clearInterval(autosave))
       <Editor :session="session" :initial-text="session.text" :headers="auth.headers" :readonly="locked" plain
               placeholder="Start writing. Every edit is chained; pastes are recorded as external text." @ready="onReady" />
       <LedgerPanel v-if="ledger" :state="ledger.state" @flush="ledger.flush()" @finalize="ledger.finalize()"
-                   @verify="ledger.verify(getText())" @enrol="ledger.enrol().catch(() => {})"
+                   @verify="ledger.verify(getText())" @enroll="ledger.enroll().catch(() => {})"
                    @checkpoint="ledger.checkpoint('discouraged').catch(() => {})" />
     </main>
   </template>

@@ -22,7 +22,7 @@ function download(name, obj) {
 <template>
   <header class="demo-head">
     <h1>attest <span class="muted">— engine demo</span></h1>
-    <p class="muted">Every edit is hash-chained in your browser before it leaves. The server only accepts events that continue the chain, and a certificate only issues if the ledger replays to exactly the text you submit. Enrol this Mac's Secure Enclave key and the chain head is also signed on-device and timestamped by an independent authority, lifting the certificate to L2. This page is the bare engine; the classroom around it is the product.</p>
+    <p class="muted">Every edit is hash-chained in your browser before it leaves. The server only accepts events that continue the chain, and a certificate only issues if the ledger replays to exactly the text you submit. Enroll this Mac's Secure Enclave key and the chain head is also signed on-device and timestamped by an independent authority, lifting the certificate to L2. This page is the bare engine; the classroom around it is the product.</p>
   </header>
   <main class="demo-grid">
     <Editor @ready="onReady" />
@@ -32,7 +32,7 @@ function download(name, obj) {
       @flush="ledger.flush()"
       @finalize="ledger.finalize()"
       @verify="ledger.verify(getText())"
-      @enrol="ledger.enrol().catch(() => {})"
+      @enroll="ledger.enroll().catch(() => {})"
       @checkpoint="ledger.checkpoint('discouraged').catch(() => {})"
       @export-cert="download(`attest-cert-${ledger.state.sessionId.slice(0, 8)}.json`, ledger.state.certificate)"
       @export-ledger="download(`attest-ledger-${ledger.state.sessionId.slice(0, 8)}.json`, ledger.exportLedger())"

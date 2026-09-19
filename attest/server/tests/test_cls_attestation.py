@@ -1,5 +1,5 @@
 """Classroom + L2: a student's key is enrolled under their user id and works across their bound
-sessions; teachers and other students cannot enrol or sign; submit yields an L2 certificate that the
+sessions; teachers and other students cannot enroll or sign; submit yields an L2 certificate that the
 review page's server-verify confirms."""
 from __future__ import annotations
 
@@ -31,14 +31,14 @@ def _draft(capp, token, assignment_id):
     return sub, led
 
 
-def test_student_enrols_signs_and_submits_l2(capp):
+def test_student_enrolls_signs_and_submits_l2(capp):
     capp.app.state.attest_settings.TSA_URL = ""  # offline
     t, a, ana, ben = _setup(capp)
     sub, led = _draft(capp, ana["token"], a["assignment_id"])
     sid = led["session_id"]
     device = FakeAuthenticator(RP, ORIGIN)
 
-    # only the owner may enrol / read credentials / sign
+    # only the owner may enroll / read credentials / sign
     assert capp.get(f"/v1/session/{sid}/enroll/options").status_code == 401
     assert capp.get(f"/v1/session/{sid}/enroll/options", headers=auth(t["token"])).status_code == 404
     assert capp.get(f"/v1/session/{sid}/enroll/options", headers=auth(ben["token"])).status_code == 404

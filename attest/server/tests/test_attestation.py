@@ -1,5 +1,5 @@
 """Stage 3 (L2): crypto primitives, timestamp tokens, WebAuthn verification, and the engine path
-enrol -> checkpoint -> finalize -> L2 certificate -> offline verify, using a software authenticator."""
+enroll -> checkpoint -> finalize -> L2 certificate -> offline verify, using a software authenticator."""
 from __future__ import annotations
 
 import base64
@@ -98,7 +98,7 @@ def test_webauthn_registration_and_assertion():
     challenge = os.urandom(32)
     reg = auth.create(challenge)
     cred = parse_registration(reg["attestation_object"], reg["client_data_json"], challenge, RP, [ORIGIN])
-    assert cred["public_key"]["crv"] == "P-256" and cred["uv_at_enrol"]
+    assert cred["public_key"]["crv"] == "P-256" and cred["uv_at_enroll"]
     with pytest.raises(ValueError):
         parse_registration(reg["attestation_object"], reg["client_data_json"], os.urandom(32), RP, [ORIGIN])
     with pytest.raises(ValueError):
@@ -127,7 +127,7 @@ def app_client():
     return TestClient(create_app(Settings(STORE="memory", TSA_URL="", WEBAUTHN_RP_ID=RP, WEBAUTHN_ORIGINS=[ORIGIN])))
 
 
-def enrol(client: TestClient, session_id: str, auth: FakeAuthenticator, headers=None) -> str:
+def enroll(client: TestClient, session_id: str, auth: FakeAuthenticator, headers=None) -> str:
     opts = client.get(f"/v1/session/{session_id}/enroll/options", headers=headers).json()
     assert opts["rp"]["id"] == RP and opts["authenticatorSelection"]["userVerification"] == "required"
     r = client.post(f"/v1/session/{session_id}/enroll", json=auth.create(b64url_decode(opts["challenge"])), headers=headers)
@@ -156,7 +156,7 @@ def test_l2_end_to_end_and_offline_verify(app_client):
     s = c.post("/v1/session/start", json={}).json()
     sid, genesis = s["session_id"], s["genesis"]
     auth = FakeAuthenticator(RP, ORIGIN)
-    cred_id = enrol(c, sid, auth)
+    cred_id = enroll(c, sid, auth)
     assert c.get(f"/v1/session/{sid}/credentials").json()[0]["credential_id"] == cred_id
 
     events, res = ingest(c, sid, genesis, typed("Hello, attested world. "))
@@ -187,7 +187,7 @@ def test_l2_end_to_end_and_offline_verify(app_client):
     s2 = c.post("/v1/session/start", json={}).json()
     sid2, gen2 = s2["session_id"], s2["genesis"]
     auth2 = FakeAuthenticator(RP, ORIGIN)
-    enrol(c, sid2, auth2)
+    enroll(c, sid2, auth2)
     ev2, r2 = ingest(c, sid2, gen2, typed("Sealed on device."))
     head2 = r2["chain_head"]
     a = c.post(f"/v1/session/{sid2}/attest", json={"head": head2, **auth2.get(bytes.fromhex(head2), uv=True)}).json()
@@ -227,7 +227,7 @@ def test_l2_end_to_end_and_offline_verify(app_client):
     assert not verify_certificate(Certificate(**tampered), "Sealed on device.", ledger)[0]
 
 
-def test_enrol_requires_fresh_challenge_and_matching_origin(app_client):
+def test_enroll_requires_fresh_challenge_and_matching_origin(app_client):
     c = app_client
     sid = c.post("/v1/session/start", json={}).json()["session_id"]
     auth = FakeAuthenticator(RP, ORIGIN)

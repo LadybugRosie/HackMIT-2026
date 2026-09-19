@@ -2,7 +2,7 @@
  * Thin wrappers over navigator.credentials for the L2 flow. The server owns all policy; this file
  * only converts between the browser's ArrayBuffer world and the base64url JSON the API speaks.
  *
- *   enrol(fetch, sessionPath)          -> credential view       (Touch ID once)
+ *   enroll(fetch, sessionPath)          -> credential view       (Touch ID once)
  *   signHead(fetch, sessionPath, head) -> AttestResponse        (silent or Touch ID, per `uv`)
  */
 
@@ -28,7 +28,7 @@ async function json(r) {
 }
 
 /** Create a platform-authenticator key for this session's owner and register its public half. */
-export async function enrol(fetchFn, sessionPath, label = null) {
+export async function enroll(fetchFn, sessionPath, label = null) {
   if (!webauthnAvailable()) throw new Error('This browser has no WebAuthn support')
   const opts = await json(await fetchFn(`${sessionPath}/enroll/options`))
   const cred = await navigator.credentials.create({

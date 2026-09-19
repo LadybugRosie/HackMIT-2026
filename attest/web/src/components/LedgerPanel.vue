@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import IntegrityPanel from './IntegrityPanel.vue'
 
 const props = defineProps({ state: { type: Object, required: true } })
-const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert', 'enrol', 'checkpoint'])
+const emit = defineEmits(['flush', 'finalize', 'verify', 'export-ledger', 'export-cert', 'enroll', 'checkpoint'])
 
 const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-6)}` : '—')
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -48,9 +48,9 @@ const status = computed(() => {
         <p class="hint muted">This browser has no WebAuthn support, so the certificate stays at L1 (ledger bound to text).</p>
       </template>
       <template v-else-if="!state.credentials.length">
-        <p class="hint muted">Enrol a key that lives in this Mac's Secure Enclave. The chain head is then signed silently every 3 minutes and with Touch ID at submit, so the certificate proves the ledger was on <em>this</em> device.</p>
+        <p class="hint muted">Enroll a key that lives in this Mac's Secure Enclave. The chain head is then signed silently every 3 minutes and with Touch ID at submit, so the certificate proves the ledger was on <em>this</em> device.</p>
         <div class="actions">
-          <button class="primary" :disabled="state.enrolling || state.finalized" @click="emit('enrol')">{{ state.enrolling ? 'Waiting for Touch ID…' : 'Enrol this device' }}</button>
+          <button class="primary" :disabled="state.enrolling || state.finalized" @click="emit('enroll')">{{ state.enrolling ? 'Waiting for Touch ID…' : 'Enroll this device' }}</button>
         </div>
       </template>
       <template v-else>

@@ -15,7 +15,7 @@ class SessionRecord:
     head: str = ""  # == genesis until the first event lands
     replay_mismatches: int = 0
     certificate: Optional[Dict[str, Any]] = None
-    owner: Optional[str] = None  # who may enrol/attest: a user id (classroom) or the session id (demo)
+    owner: Optional[str] = None  # who may enroll/attest: a user id (classroom) or the session id (demo)
     attestations: List[Dict[str, Any]] = field(default_factory=list)  # device signatures / timestamps over heads
 
     @property

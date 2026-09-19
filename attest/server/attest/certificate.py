@@ -21,7 +21,7 @@ def build_certificate(session: SessionRecord, final_text: str,
                       attestors: Optional[Mapping[str, Attestor]] = None) -> Tuple[Optional[Certificate], Optional[str]]:
     """Return (certificate, None) or (None, reason) if the ledger does not bind to final_text.
     `attestors` are the server's authoritative verifiers; without them attestations are still
-    checked with the keys they embed (the server verified those against enrolment at /attest)."""
+    checked with the keys they embed (the server verified those against enrollment at /attest)."""
     chain = verify_chain(session.events, session.genesis)
     if not chain.ok:
         return None, f"ledger chain invalid at event {chain.index}: {chain.error}"

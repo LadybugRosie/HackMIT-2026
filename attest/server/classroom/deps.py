@@ -94,7 +94,7 @@ def guard_session_path(request: Request, user: Optional[dict] = Depends(optional
 
 
 def guard_session_owner(request: Request, user: Optional[dict] = Depends(optional_user)) -> None:
-    """Device enrolment and head signing on a bound session: the owning student only, while the
+    """Device enrollment and head signing on a bound session: the owning student only, while the
     draft is open. Teachers can *read* everything else about a session but never sign for it."""
     session_id = request.path_params.get("session_id")
     if not session_id:

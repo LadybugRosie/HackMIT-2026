@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import { ChainBuilder, sha256Hex } from './chain.js'
-import { enrol as waEnrol, listCredentials, signHead, webauthnAvailable } from './webauthn.js'
+import { enroll as waEnroll, listCredentials, signHead, webauthnAvailable } from './webauthn.js'
 
 const FLUSH_EVERY_EVENTS = 50
 const FLUSH_EVERY_MS = 5000
@@ -194,16 +194,16 @@ export class LedgerSync {
   }
 
   /** Create a device-bound key for this session's owner (Touch ID once). */
-  async enrol(label = null) {
+  async enroll(label = null) {
     this.state.enrolling = true
     this.state.attestError = null
     try {
-      const cred = await waEnrol((p, i) => this._fetch(p, i), this._sessionPath, label)
+      const cred = await waEnroll((p, i) => this._fetch(p, i), this._sessionPath, label)
       this.state.credentials = [...this.state.credentials, cred]
       this._armCheckpoints()
       return cred
     } catch (e) {
-      this.state.attestError = e.name === 'NotAllowedError' ? 'Enrolment cancelled' : e.message
+      this.state.attestError = e.name === 'NotAllowedError' ? 'Enrollment cancelled' : e.message
       throw e
     } finally {
       this.state.enrolling = false

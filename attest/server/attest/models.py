@@ -138,7 +138,7 @@ class CredentialView(BaseModel):
     created_ms: int
     aaguid: str = ""
     label: Optional[str] = None
-    uv_at_enrol: bool = False
+    uv_at_enroll: bool = False
 
 
 class AttestRequest(BaseModel):
