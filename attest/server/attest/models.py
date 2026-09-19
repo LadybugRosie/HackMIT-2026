@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Hex64 = Field(pattern=r"^[0-9a-f]{64}$")
+
+EventKind = Literal["type", "paste", "ckpt", "copy", "kd", "ku"]
+PasteSource = Literal["int", "ext"]
+
+
+class Event(BaseModel):
+    """One chained edit event. Field names are short because they are hashed verbatim."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seq: int = Field(ge=0)
+    ts: int = Field(ge=0, description="epoch milliseconds")
+    p: int = Field(ge=0, description="position in code points")
+    d: int = Field(ge=0, description="code points deleted")
+    i: str = Field(default="", description="text inserted (ckpt: full text)")
+    k: EventKind
+    src: Optional[PasteSource] = None
+    prev: str = Hex64
+    hash: str = Hex64
+
+
+class SessionStartRequest(BaseModel):
+    doc_id: Optional[str] = None
+    client: Optional[str] = None
+
+
+class SessionStartResponse(BaseModel):
+    session_id: str
+    genesis: str
+    server_nonce: str
+    created_ms: int
+
+
+class IngestRequest(BaseModel):
+    session_id: str
+    events: List[Event] = Field(min_length=1)
+    content_sha256: str = Hex64
+    content_len: int = Field(ge=0)
+
+
+class IngestResponse(BaseModel):
+    session_id: str
+    chain_head: str
+    event_count: int
+    replay_ok: bool
+    replay_sha256: str
+    replay_len: int
+
+
+class SessionView(BaseModel):
+    session_id: str
+    genesis: str
+    created_ms: int
+    event_count: int
+    chain_head: str
+    replay_mismatches: int
+    finalized: bool
+
+
+class FinalizeRequest(BaseModel):
+    final_text: str
+
+
+class Certificate(BaseModel):
+    version: int = 1
+    session_id: str
+    doc_sha256: str
+    doc_len: int
+    chain_root: str
+    merkle_root: str
+    event_count: int
+    genesis: str
+    created_ms: int
+    assurance_level: str  # L0 chain-valid | L1 +doc-bound | L2 +device-signed | L3 +hardware-origin
+    claims: Dict[str, Any] = Field(default_factory=dict)
+    attestations: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class Check(BaseModel):
+    name: str
+    ok: bool
+    detail: str = ""
+
+
+class VerifyRequest(BaseModel):
+    certificate: Certificate
+    text: str
+    events: Optional[List[Event]] = None
+
+
+class VerifyResponse(BaseModel):
+    ok: bool
+    assurance_level: str
+    checks: List[Check]
