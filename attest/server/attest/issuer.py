@@ -28,8 +28,22 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 from .crypto import ec
 
 
+def _js_stable(v: Any) -> Any:
+    """Certificates round-trip through JavaScript, which has one number type: 1.0 comes back as 1.
+    Normalise integral floats to ints (and drop -0.0) so the canonical bytes survive the trip."""
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, float):
+        return int(v) if v.is_integer() else v
+    if isinstance(v, dict):
+        return {k: _js_stable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_js_stable(x) for x in v]
+    return v
+
+
 def canon_certificate(cert: Mapping[str, Any]) -> bytes:
-    body = {k: v for k, v in cert.items() if k != "issuer"}
+    body = _js_stable({k: v for k, v in cert.items() if k != "issuer"})
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 

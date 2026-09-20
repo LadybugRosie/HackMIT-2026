@@ -305,10 +305,24 @@ export class LedgerSync {
   }
 
   /** Forward closed windows the helper has produced since the last relay (needs an enrolled key). */
-  async relayHid() {
+  async relayHid(retried = false) {
     const h = this.state.hid
     if (!h.witnessing || !h.enrolled) return
-    const res = await hid.statements(this.state.sessionId, this.hidSince)
+    let res
+    try {
+      res = await hid.statements(this.state.sessionId, this.hidSince)
+    } catch (e) {
+      if (e.status === 404) {
+        // The helper was restarted and no longer knows this session: open a new segment anchored
+        // at the current head. Keystrokes typed in between are honestly unwitnessed (coverage < 100%).
+        h.witnessing = false
+        clearInterval(this.hidTimer)
+        h.error = 'witness helper restarted — starting a new segment'
+        await this.startWitness()
+        return
+      }
+      throw e
+    }
     const sts = res.statements || []
     if (!sts.length) return
     const r = await this._fetch(`${this._sessionPath}/attest-hid`, {
@@ -316,10 +330,17 @@ export class LedgerSync {
     })
     if (!r.ok) {
       const b = await r.json().catch(() => ({}))
-      h.error = `relay ${r.status}: ${b.detail?.detail || JSON.stringify(b.detail ?? b)}`
-      if (b.detail?.code === 'hid_chain_break' || b.detail?.code === 'unknown_head') { h.witnessing = false; clearInterval(this.hidTimer) }
+      const d = b.detail || {}
+      if (d.code === 'hid_chain_break' && Number.isInteger(d.expected_seq) && !retried) {
+        // After a page reload the server already holds part of this segment: resume from its tail.
+        this.hidSince = d.expected_seq - 1
+        return this.relayHid(true)
+      }
+      h.error = `relay ${r.status}: ${d.detail || JSON.stringify(b.detail ?? b)}`
+      if (d.code === 'hid_chain_break' || d.code === 'unknown_head') { h.witnessing = false; clearInterval(this.hidTimer) }
       return
     }
+    h.error = null
     const out = await r.json()
     this.hidSince = out.seq_to
     h.relayed += out.accepted

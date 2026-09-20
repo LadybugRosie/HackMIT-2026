@@ -80,3 +80,20 @@ def test_issuer_key_persists_across_restarts(tmp_path):
     signed = {**cert, "issuer": a.sign(cert)}
     assert canon_certificate(signed) == canon_certificate(cert)
     assert verify_issuer(signed, {b.key_id: b.public_key_hex})[2] is True
+
+
+def test_seal_survives_a_javascript_round_trip():
+    """JSON.stringify writes 1.0 as 1; the canonical form must not care."""
+    c = TestClient(create_app(Settings(STORE="memory", ISSUER_KEY_PATH="")))
+    text = "Round trip."
+    cert, events = _finalize(c, text)
+
+    def js(v):
+        if isinstance(v, bool): return v
+        if isinstance(v, float) and v.is_integer(): return int(v)
+        if isinstance(v, dict): return {k: js(x) for k, x in v.items()}
+        if isinstance(v, list): return [js(x) for x in v]
+        return v
+    assert json.dumps(js(cert)) != json.dumps(cert)  # the trip really changes the bytes (e.g. "typed": 1.0 -> 1)
+    v = c.post("/v1/verify", json={"certificate": js(cert), "text": text, "events": events}).json()
+    assert v["ok"] and {ch["name"]: ch for ch in v["checks"]}["issuer"]["ok"]

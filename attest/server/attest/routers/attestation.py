@@ -265,7 +265,8 @@ def attest_hid(session_id: str, payload: AttestHidRequest, request: Request) -> 
         expected_prev = prev_st if prev_st is not None else tails.get(st["seg"])
         if st["seq"] == 0:
             if expected_prev is not None:
-                raise HTTPException(409, {"code": "hid_chain_break", "detail": f"segment {st['seg']} already started"})
+                raise HTTPException(409, {"code": "hid_chain_break", "detail": f"segment {st['seg']} already started",
+                                          "seg": st["seg"], "expected_seq": expected_prev["seq"] + 1})
             head = (st.get("anchor") or {}).get("head")
             if head not in heads or st["prev"] != head:
                 raise HTTPException(409, {"code": "unknown_head", "detail": "segment anchor is not a state of this ledger", "chain_head": rec.head})
@@ -274,7 +275,7 @@ def attest_hid(session_id: str, payload: AttestHidRequest, request: Request) -> 
             if expected_prev is None or st["seq"] != expected_prev["seq"] + 1 or st["prev"] != expected_prev["hash"] \
                     or st["t0"] != expected_prev["t1"]:
                 raise HTTPException(409, {"code": "hid_chain_break", "detail": f"statement {st['seg']}/{st['seq']} does not continue the stored chain",
-                                          "expected_seq": (expected_prev["seq"] + 1) if expected_prev else 0})
+                                          "seg": st["seg"], "expected_seq": (expected_prev["seq"] + 1) if expected_prev else 0})
         if st.get("final"):
             head = (st.get("anchor") or {}).get("head")
             if head != rec.head:
