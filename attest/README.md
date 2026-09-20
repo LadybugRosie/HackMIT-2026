@@ -177,10 +177,12 @@ A sparse teaching platform built *around* attest, in the same server and SQLite 
   excluded, matched passages recovered on both sides and mirrored across submissions.
 
 ```bash
-cd server && .venv/bin/uvicorn classroom.app:app --port 8090 --reload   # API + engine
-cd web && pnpm dev                                                       # http://localhost:9100
-cd server && .venv/bin/python -m classroom.seed                          # demo accounts + Ben's essay
+./dev.sh up        # API :8090 + web :9100 + hardware witness :8093 — kills stale instances first
+./dev.sh reset     # fresh database + demo accounts + Ben's essay
+./dev.sh status | logs | down | restart | seed
 ```
+(or by hand: `cd server && .venv/bin/uvicorn classroom.app:app --port 8090 --reload`, `cd web && pnpm dev`,
+`native/attest-hid/.build/release/attest-hid`, `cd server && .venv/bin/python -m classroom.seed`)
 
 ## Layout
 
