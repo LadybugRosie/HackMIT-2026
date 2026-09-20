@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Request, APIRouter, Depends, HTTPException
 
 from attest.certificate import verify_certificate
 from attest.models import Certificate
@@ -21,7 +21,7 @@ def _bound_session(store, row: dict):
 
 
 @router.post("/submissions/{submission_id}/verify")
-def verify_submission(submission_id: str, db: Db = Depends(get_db), store=Depends(get_store),
+def verify_submission(submission_id: str, request: Request, db: Db = Depends(get_db), store=Depends(get_store),
                       user: dict = Depends(current_user)) -> dict:
     """Re-derive the whole chain and replay against the stored text — the same checks the offline CLI runs."""
     row = submission_or_404(db, submission_id, user)
@@ -29,8 +29,11 @@ def verify_submission(submission_id: str, db: Db = Depends(get_db), store=Depend
     if cert is None:
         raise HTTPException(409, {"code": "not_submitted", "detail": "no certificate yet"})
     rec = _bound_session(store, row)
-    ok, level, checks = verify_certificate(Certificate(**cert), row["content"], rec.events)
-    return {"ok": ok, "assurance_level": level, "checks": [c.model_dump() for c in checks], "event_count": rec.event_count}
+    issuer = request.app.state.issuer
+    ok, level, checks = verify_certificate(Certificate(**cert), row["content"], rec.events,
+                                           request.app.state.attest_settings.HID_TRUSTED_CDHASHES, {issuer.key_id: issuer.public_key_hex})
+    return {"ok": ok, "assurance_level": level, "checks": [c.model_dump() for c in checks], "event_count": rec.event_count,
+            "issuer": issuer.public_info()}
 
 
 @router.get("/submissions/{submission_id}/playback")

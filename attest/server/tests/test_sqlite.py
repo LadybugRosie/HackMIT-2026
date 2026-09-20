@@ -24,14 +24,14 @@ def test_sqlite_store_roundtrip(tmp_path):
 
 def test_session_survives_app_restart(tmp_path):
     path = str(tmp_path / "attest.db")
-    c1 = TestClient(create_app(Settings(STORE="sqlite", SQLITE_PATH=path)))
+    c1 = TestClient(create_app(Settings(STORE="sqlite", SQLITE_PATH=path, ISSUER_KEY_PATH=path + ".issuer.json")))
     s = c1.post("/v1/session/start", json={}).json()
     events = build_chain(s["genesis"], typed("persist"))
     r = c1.post("/v1/ingest", json={"session_id": s["session_id"], "events": events,
                                     "content_sha256": sha256_hex("persist"), "content_len": 7})
     assert r.status_code == 200
 
-    c2 = TestClient(create_app(Settings(STORE="sqlite", SQLITE_PATH=path)))  # "restart"
+    c2 = TestClient(create_app(Settings(STORE="sqlite", SQLITE_PATH=path, ISSUER_KEY_PATH=path + ".issuer.json")))  # "restart"
     view = c2.get(f"/v1/session/{s['session_id']}").json()
     assert view["event_count"] == 7 and view["chain_head"] == events[-1]["hash"]
     cert = c2.post(f"/v1/session/{s['session_id']}/finalize", json={"final_text": "persist"})

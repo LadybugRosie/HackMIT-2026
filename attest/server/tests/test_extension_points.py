@@ -35,7 +35,7 @@ def test_unknown_attestation_kind_fails_closed():
 
 
 def test_stub_stylometry_is_deterministic_and_degrades():
-    client = get_client(Settings(STYLOMETRY_BASE=""))
+    client = get_client(Settings(ISSUER_KEY_PATH="", STYLOMETRY_BASE=""))
     assert isinstance(client, StubStylometryClient)
     a = client.verify(SAMPLE, "alice")
     b = client.verify(SAMPLE, "alice")
@@ -44,6 +44,6 @@ def test_stub_stylometry_is_deterministic_and_degrades():
 
 
 def test_http_stylometry_unreachable_is_unknown_not_error():
-    client = get_client(Settings(STYLOMETRY_BASE="http://127.0.0.1:9"))
+    client = get_client(Settings(ISSUER_KEY_PATH="", STYLOMETRY_BASE="http://127.0.0.1:9"))
     res = client.verify(SAMPLE, "alice", "cs101")
     assert res.verdict == "unknown" and "unreachable" in res.detail

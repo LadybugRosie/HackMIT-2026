@@ -2,6 +2,8 @@
 one SQLite file. Run with `uvicorn classroom.app:app --port 8090 --reload`."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,7 +30,8 @@ def create_app(cfg: ClassroomSettings = default_settings) -> FastAPI:
 
     app.state.settings = cfg
     app.state.db = Db(cfg.DB_PATH)  # creates the data directory; the store opens the same file next
-    attest_cfg = AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS)
+    attest_cfg = AttestSettings(STORE="sqlite", SQLITE_PATH=cfg.DB_PATH, CORS_ORIGINS=cfg.CORS_ORIGINS,
+                                ISSUER_KEY_PATH=str(Path(cfg.DB_PATH).with_name("attest-issuer-key.json")))
     app.state.store = make_store(attest_cfg)
     configure_attestation(app, attest_cfg)  # WebAuthn RP/origins + TSA from ATTEST_* env
     # Tests swap this for a fake; production resolves against Crossref/doi.org with a 7-day cache.

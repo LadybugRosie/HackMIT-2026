@@ -104,9 +104,18 @@ captured real FreeTSA token (`tests/fixtures/`). Settings: `ATTEST_WEBAUTHN_RP_I
 
 What L2 does **not** prove: that the keystrokes were physical (a script driving the editor on the
 student's own Mac still passes — that is L3), or that the words are the student's own (signals,
-stylometry). And the certificate itself is not yet signed by the server, so an offline verifier
-trusts the embedded public key because it trusts the certificate's source; an issuer signature is
-the natural next step.
+stylometry).
+
+## The issuer seal
+
+Everything above is self-consistent by construction — a student running their own copy of this
+server could mint a certificate whose chain, replay and device signature all check against the
+keys *inside the file*. So the server signs every certificate it issues with its own P-256 key
+(`issuer: {alg, key_id, public_key, signature}`, over the canonical certificate). The public half
+is at `GET /v1/issuer`; the key file lives next to the database (`ATTEST_ISSUER_KEY_PATH`). The
+server's own verify and the teacher's review page fail `issuer` for anything not signed by this
+key; the offline CLI does the same with `--issuer-key <hex|file>` and otherwise reports the seal
+as self-consistent only.
 
 ## The hardware witness (Stage 4 — L3)
 

@@ -103,7 +103,7 @@ def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTas
 
     if rec.certificate is None:
         cert, reason = build_certificate(rec, payload.text, request.app.state.attestors,
-                                         request.app.state.attest_settings.HID_TRUSTED_CDHASHES)
+                                         request.app.state.attest_settings.HID_TRUSTED_CDHASHES, request.app.state.issuer)
         if cert is None:
             raise HTTPException(409, {"code": "not_bound", "detail": reason})
         cert_dict = cert.model_dump()
@@ -113,7 +113,9 @@ def submit(submission_id: str, payload: SubmitRequest, background: BackgroundTas
         if cert_dict["doc_sha256"] != sha256_hex(payload.text):
             raise HTTPException(409, {"code": "hash_mismatch",
                                       "detail": "the text differs from the ledger that was finalized — reload and submit again"})
-    ok, level, checks = verify_certificate(Certificate(**cert_dict), payload.text, rec.events)
+    issuer = request.app.state.issuer
+    ok, level, checks = verify_certificate(Certificate(**cert_dict), payload.text, rec.events,
+                                           request.app.state.attest_settings.HID_TRUSTED_CDHASHES, {issuer.key_id: issuer.public_key_hex})
     if not ok:  # cannot happen if the store is consistent; refuse loudly rather than certify garbage
         raise HTTPException(500, {"code": "verify_failed", "checks": [c.model_dump() for c in checks]})
 

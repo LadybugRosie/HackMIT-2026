@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     MAX_EVENT_TEXT_CHARS: int = 200_000
     STYLOMETRY_BASE: str = ""  # empty -> deterministic local stub (Stage 5)
 
+    # Issuer key: the server's seal on every certificate. Empty -> ephemeral key (tests).
+    ISSUER_KEY_PATH: str = "./data/attest-issuer-key.json"
+
     # Stage 3 (L2): device attestation via WebAuthn + RFC 3161 timestamps
     WEBAUTHN_RP_ID: str = "localhost"          # must be the origin's host (or a registrable suffix of it)
     WEBAUTHN_RP_NAME: str = "attest"

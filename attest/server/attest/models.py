@@ -234,6 +234,7 @@ class Certificate(BaseModel):
     assurance_level: str  # L0 chain-valid | L1 +doc-bound | L2 +device-signed | L3 +hardware-origin
     claims: Dict[str, Any] = Field(default_factory=dict)
     attestations: List[Dict[str, Any]] = Field(default_factory=list)
+    issuer: Optional[Dict[str, Any]] = None  # {alg, key_id, public_key, signature} — the server's seal
 
 
 class Check(BaseModel):

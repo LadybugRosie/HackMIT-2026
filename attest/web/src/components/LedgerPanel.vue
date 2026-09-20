@@ -126,6 +126,7 @@ const status = computed(() => {
         <dt>chain_root</dt><dd class="mono">{{ short(state.certificate.chain_root) }}</dd>
         <dt>merkle_root</dt><dd class="mono">{{ short(state.certificate.merkle_root) }}</dd>
         <dt>events</dt><dd>{{ state.certificate.event_count }}</dd>
+        <dt>issuer</dt><dd class="mono">{{ state.certificate.issuer ? `key ${state.certificate.issuer.key_id}` : '—' }}</dd>
         <template v-if="attSummary">
           <dt>device</dt>
           <dd>

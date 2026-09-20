@@ -13,13 +13,14 @@ from .analysis import analyze
 from .attestors import AttestationResult, Attestor, offline_attestors
 from .attestors.policy import LEVEL_CHAIN_VALID, LEVEL_DEVICE_BOUND, LEVEL_DOC_BOUND, LEVEL_HARDWARE_WITNESS, assess_attestations
 from .chain import merkle_root, sha256_hex, verify_chain
+from .issuer import Issuer, verify_issuer
 from .models import Certificate, Check
 from .replay import ReplayError, replay
 from .storage.base import SessionRecord
 
 def build_certificate(session: SessionRecord, final_text: str,
                       attestors: Optional[Mapping[str, Attestor]] = None,
-                      trusted_cdhashes: Iterable[str] = ()) -> Tuple[Optional[Certificate], Optional[str]]:
+                      trusted_cdhashes: Iterable[str] = (), issuer: Optional[Issuer] = None) -> Tuple[Optional[Certificate], Optional[str]]:
     """Return (certificate, None) or (None, reason) if the ledger does not bind to final_text.
     `attestors` are the server's authoritative verifiers; without them attestations are still
     checked with the keys they embed (the server verified those against enrollment at /attest)."""
@@ -54,15 +55,25 @@ def build_certificate(session: SessionRecord, final_text: str,
         },
         attestations=[dict(a) for a in session.attestations],
     )
+    if issuer is not None:
+        cert.issuer = issuer.sign(cert.model_dump(exclude={"issuer"}))
     return cert, None
 
 
 def verify_certificate(
     cert: Certificate, text: str, events: Optional[Sequence[Mapping[str, Any]]] = None,
-    trusted_cdhashes: Iterable[str] = (),
+    trusted_cdhashes: Iterable[str] = (), trusted_issuers: Optional[Mapping[str, str]] = None,
 ) -> Tuple[bool, str, List[Check]]:
-    """Pure verification. With `events` supplied, the full ledger is re-derived and matched."""
+    """Pure verification. With `events` supplied, the full ledger is re-derived and matched.
+    `trusted_issuers` (key_id -> public key hex): when given, a certificate that is unsigned or signed
+    by another key FAILS `issuer` — it was not issued by this server. When None (a verifier with no
+    issuer list) the issuer signature is checked for self-consistency and reported as INFO."""
     checks: List[Check] = []
+    present, sig_ok, trusted, detail = verify_issuer(cert.model_dump(), trusted_issuers)
+    if trusted_issuers is not None:
+        checks.append(Check(name="issuer", ok=present and sig_ok and bool(trusted), detail=detail))
+    else:  # no issuer list: a present-but-broken signature is a hard failure; unsigned is informational
+        checks.append(Check(name="issuer", ok=sig_ok, info=not present, detail=detail))
 
     doc_ok = sha256_hex(text) == cert.doc_sha256
     checks.append(Check(name="doc_sha256", ok=doc_ok, detail="submitted text matches certificate" if doc_ok else "text hash mismatch"))

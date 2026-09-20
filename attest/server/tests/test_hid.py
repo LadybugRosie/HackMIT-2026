@@ -200,7 +200,7 @@ def test_policy_requires_l2_for_l3():
 
 @pytest.fixture
 def app_client():
-    return TestClient(create_app(Settings(STORE="memory", TSA_URL="", WEBAUTHN_RP_ID=RP, WEBAUTHN_ORIGINS=[ORIGIN])))
+    return TestClient(create_app(Settings(STORE="memory", ISSUER_KEY_PATH="", TSA_URL="", WEBAUTHN_RP_ID=RP, WEBAUTHN_ORIGINS=[ORIGIN])))
 
 
 def _enroll_both(c, sid, auth, helper):

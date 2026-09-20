@@ -37,4 +37,4 @@ def genesis() -> str:
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(create_app(Settings(STORE="memory")))
+    return TestClient(create_app(Settings(STORE="memory", ISSUER_KEY_PATH="")))

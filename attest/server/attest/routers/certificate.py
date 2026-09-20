@@ -16,7 +16,7 @@ def finalize(session_id: str, payload: FinalizeRequest, request: Request) -> Cer
         return Certificate(**rec.certificate)
     cfg = getattr(request.app.state, 'attest_settings', None)
     cert, reason = build_certificate(rec, payload.final_text, getattr(request.app.state, 'attestors', None),
-                                     cfg.HID_TRUSTED_CDHASHES if cfg else ())
+                                     cfg.HID_TRUSTED_CDHASHES if cfg else (), getattr(request.app.state, 'issuer', None))
     if cert is None:
         raise HTTPException(409, {"code": "not_bound", "detail": reason})
     store.set_certificate(session_id, cert.model_dump())

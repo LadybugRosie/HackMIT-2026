@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 try:  # optional: attestation verification (still stdlib-only, just more code)
     from attest.attestors import offline_attestors  # type: ignore
     from attest.attestors.policy import assess_attestations  # type: ignore
+    from attest.issuer import key_id_for, verify_issuer  # type: ignore
     HAVE_ATTESTORS = True
 except Exception:  # noqa: BLE001
     HAVE_ATTESTORS = False
@@ -88,6 +89,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("certificate")
     ap.add_argument("document")
     ap.add_argument("--events", help="ledger export JSON ({genesis, events}) for full re-derivation")
+    ap.add_argument("--issuer-key", metavar="HEX|FILE",
+                    help="the issuing server's public key (65-byte uncompressed P-256, hex — from GET /v1/issuer — or a JSON file with "
+                         "a public_key field). With it, a certificate not signed by that server FAILS `issuer`.")
     ap.add_argument("--trust-helper", action="append", metavar="CDHASH",
                     help="accept hardware-witness statements only from this helper build (repeatable); default: accept any, flag unverified")
     args = ap.parse_args(argv)
@@ -120,6 +124,21 @@ def main(argv: Optional[List[str]] = None) -> int:
             check("replay", replay(events) == text, "ledger replays to submitted text", "ledger replays to DIFFERENT text")
         except ValueError as exc:
             check("replay", False, "", str(exc))
+
+    if HAVE_ATTESTORS:
+        trusted = None
+        if args.issuer_key:
+            key = args.issuer_key
+            if os.path.exists(key):
+                key = json.load(open(key, encoding="utf-8"))["public_key"]
+            trusted = {key_id_for(key): key}
+        present, sig_ok, is_trusted, detail = verify_issuer(cert, trusted)
+        if trusted is not None:
+            check("issuer", present and sig_ok and bool(is_trusted), detail, detail)
+        else:
+            check("issuer", sig_ok, detail, detail, info=not present)
+    elif cert.get("issuer"):
+        check("issuer", False, "", "issuer signature present but server/attest modules not found — cannot check", info=True)
 
     attestations = cert.get("attestations") or []
     claimed = cert.get("assurance_level", "?")

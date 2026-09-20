@@ -18,6 +18,7 @@ const LEVEL_TEXT = {
   L3: 'L2 + a hardware witness below the browser saw a physical key-down for every keystroke (software witness — see README)',
 }
 const hid = att?.hid ?? null
+const issuer = props.certificate.issuer ?? null
 const levelLabel = props.certificate.assurance_level === 'L3' ? 'L3 · witness' : props.certificate.assurance_level
 
 function download(name, obj) {
@@ -63,6 +64,9 @@ async function downloadLedger() {
       <dt>Chain root</dt><dd class="mono">{{ certificate.chain_root }}</dd>
       <dt>Merkle root</dt><dd class="mono">{{ certificate.merkle_root }}</dd>
       <dt>Genesis</dt><dd class="mono">{{ certificate.genesis }}</dd>
+      <dt>Issuer</dt>
+      <dd class="mono" v-if="issuer">key {{ issuer.key_id }} · <span class="muted">ES256 seal over the certificate — anyone with the server's public key can check it did not come from elsewhere</span></dd>
+      <dd v-else class="muted">unsigned (issued before issuer keys)</dd>
     </dl>
     <div class="actions">
       <button @click="download(`attest-cert-${certificate.session_id.slice(0, 8)}.json`, certificate)">Download certificate</button>
@@ -78,7 +82,7 @@ async function downloadLedger() {
         <span v-if="result.event_count" class="muted"> · {{ result.event_count }} events re-derived</span>
       </li>
     </ul>
-    <p class="muted tiny">Anyone can re-check this offline: <code>python3 verifier/attest_verify.py cert.json text.txt --events ledger.json</code></p>
+    <p class="muted tiny">Anyone can re-check this offline: <code>python3 verifier/attest_verify.py cert.json text.txt --events ledger.json<template v-if="issuer"> --issuer-key {{ issuer.public_key.slice(0, 10) }}…</template></code></p>
   </section>
 </template>
 

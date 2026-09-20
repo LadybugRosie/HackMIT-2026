@@ -124,7 +124,7 @@ def test_webauthn_registration_and_assertion():
 @pytest.fixture
 def app_client():
     # TSA_URL="" keeps tests offline; the timestamp path is covered by the fixture test above.
-    return TestClient(create_app(Settings(STORE="memory", TSA_URL="", WEBAUTHN_RP_ID=RP, WEBAUTHN_ORIGINS=[ORIGIN])))
+    return TestClient(create_app(Settings(STORE="memory", ISSUER_KEY_PATH="", TSA_URL="", WEBAUTHN_RP_ID=RP, WEBAUTHN_ORIGINS=[ORIGIN])))
 
 
 def enroll(client: TestClient, session_id: str, auth: FakeAuthenticator, headers=None) -> str:
