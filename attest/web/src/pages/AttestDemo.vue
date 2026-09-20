@@ -9,6 +9,8 @@ const getText = ref(() => '')
 function onReady(payload) {
   ledger.value = payload.ledger
   getText.value = payload.getText
+  // Dev only: lets the console tamper with the live ledger/certificate to demonstrate rejections.
+  if (import.meta.env.DEV) window.attest = { ledger: payload.ledger, getText: payload.getText, editor: payload.editor }
 }
 
 function download(name, obj) {
