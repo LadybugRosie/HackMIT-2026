@@ -200,7 +200,8 @@ cd server && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 cd web && pnpm install && pnpm dev        # http://localhost:9100
 ```
 ```bash
-cd server && .venv/bin/pytest -q
+cd server && .venv/bin/pytest -q                  # 126 tests
+cd server && .venv/bin/python walkthrough.py      # narrated end-to-end run of every feature (add --live-tsa for a real timestamp)
 ```
 
 Offline verification of a downloaded certificate + ledger:
