@@ -149,8 +149,7 @@ func route(_ req: HTTPRequest) -> HTTPResponse {
 let server: LocalServer
 do {
     server = try LocalServer(port: opts.port, allowedOrigins: opts.origins, route: route)
-    server.start()
-    log("listening on http://127.0.0.1:\(opts.port) for origins \(opts.origins.joined(separator: ", "))")
+    server.start { log("listening on http://127.0.0.1:\(opts.port) for origins \(opts.origins.joined(separator: ", "))") }
 } catch {
     log("cannot listen on port \(opts.port): \(error)"); exit(1)
 }

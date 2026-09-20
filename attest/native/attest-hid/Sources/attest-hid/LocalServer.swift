@@ -38,10 +38,19 @@ final class LocalServer {
         self.route = route
     }
 
-    func start() {
+    /// `onReady` fires once the socket is bound; a bind failure (e.g. port in use) exits with a clear message.
+    func start(onReady: @escaping () -> Void) {
         listener.newConnectionHandler = { [weak self] conn in self?.serve(conn) }
+        let port = listener.port?.rawValue ?? 0
         listener.stateUpdateHandler = { st in
-            if case .failed(let e) = st { FileHandle.standardError.write(Data("[attest-hid] listener failed: \(e)\n".utf8)) }
+            switch st {
+            case .ready: onReady()
+            case .failed(let e):
+                let hint = "\(e)".contains("48") ? " — another attest-hid is already running (lsof -iTCP:\(port) shows it; kill that PID)" : ""
+                FileHandle.standardError.write(Data("[attest-hid] cannot listen on 127.0.0.1:\(port): \(e)\(hint)\n".utf8))
+                exit(1)
+            default: break
+            }
             if Debug.on { FileHandle.standardError.write(Data("[attest-hid] listener \(st)\n".utf8)) }
         }
         listener.start(queue: queue)
