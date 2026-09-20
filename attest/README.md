@@ -6,6 +6,45 @@ portable **Proof-of-Writing certificate** anyone can verify offline. Later stage
 device- and hardware-rooted attestation (Secure Enclave, HID-level keystroke origin),
 keystroke-timing forensics, stylometry reconciliation, and a zero-knowledge proof mode.
 
+## Run the demo
+
+Requirements: macOS with Apple silicon or T2 (Secure Enclave + Touch ID for L2/L3), Python 3.12+,
+Node 20+ with `pnpm` (or npm), Xcode command-line tools for the Swift helper. Everything else is
+installed on first run.
+
+```bash
+git clone https://github.com/LadybugRosie/HackMIT-2026 && cd HackMIT-2026/attest
+./dev.sh reset          # installs deps, starts API :8090 + web :9100 + witness :8093, seeds demo data
+```
+
+Open **http://localhost:9100**. Accounts (password `Passw0rd!x`): teacher `prof@demo.edu`;
+students `ana@demo.edu`, `ben@demo.edu` (essay already submitted), `cara@demo.edu`; class code `DEMO26`.
+
+The first time the witness runs, macOS asks for **Input Monitoring** for the app that launched it
+(Terminal). Grant it, then `./dev.sh restart`. `./dev.sh status` shows what is up; `./dev.sh logs`
+tails everything; `./dev.sh down` stops it all.
+
+**Two-minute walkthrough**
+
+1. *Engine* — http://localhost:9100/attest. Type a sentence: the chain head changes per keystroke,
+   the server acknowledges batches, the process signals fill in. Paste something: the mix bar turns
+   red. **Enroll this device** (Touch ID) and **Enroll witness** (no prompt), type more —
+   *editor N · keyboard N ✓*. **Finalize** → Touch ID → certificate **L3 (software witness)**;
+   **Verify current text** lists every check including the issuer seal.
+2. *Injection* — in the browser console:
+   `document.querySelector('.attest-editor').focus(); document.execCommand('insertText', false, 'This was injected by a script. ')`
+   The witness row turns red (*editor 33 · keyboard 0 — injected*) and the certificate stays at
+   **L2 and says why**.
+3. *Classroom* — log in as Ana → *Position paper* → **Start writing** → type → **Submit** (Touch ID).
+   Log in as Prof → assignment → Ana's row → review page: pasted spans, server verify, citations,
+   similarity vs Ben, **Playback**, grade → return.
+4. *Offline* — download certificate + ledger from any certificate card and, with plain `python3`:
+   `python3 verifier/attest_verify.py cert.json essay.txt --events ledger.json --issuer-key $(curl -s localhost:8090/v1/issuer | python3 -c 'import json,sys;print(json.load(sys.stdin)["public_key"])')`
+
+**Scripted, no hands**: `cd server && .venv/bin/python walkthrough.py` runs every feature end to
+end in-process with a software Touch ID and a software witness and prints one ✓ per claim
+(`--live-tsa` fetches a real timestamp). `cd server && .venv/bin/pytest -q` runs the 127 tests.
+
 ## Why
 
 Integrity tools today either trust the client's word or demand full surveillance of a
