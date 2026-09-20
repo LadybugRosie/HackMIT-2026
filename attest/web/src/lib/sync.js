@@ -5,7 +5,7 @@ import * as hid from './hid.js'
 
 const FLUSH_EVERY_EVENTS = 50
 const FLUSH_EVERY_MS = 5000
-const CHECKPOINT_EVERY_MS = 3 * 60_000 // silent device signature over the head every ~3 minutes
+const CHECKPOINT_EVERY_MS = 3 * 60_000 // silent trusted-timestamp checkpoint over the head every ~3 minutes
 const HID_POLL_MS = 6000               // relay the helper's signed windows to the server
 
 /**
@@ -76,6 +76,7 @@ export class LedgerSync {
     this.chain = new ChainBuilder(s.genesis)
     Object.assign(this.state, { sessionId: s.session_id, genesis: s.genesis, head: s.genesis })
     this._arm()
+    this._armCheckpoints()
     this.refreshCredentials()
   }
 
@@ -88,7 +89,7 @@ export class LedgerSync {
     Object.assign(this.state, {
       sessionId: session_id, genesis, head: chain_head, count: event_count, resumed: true, finalized: !!finalized,
     })
-    if (!finalized) this._arm()
+    if (!finalized) { this._arm(); this._armCheckpoints() }
     this.refreshCredentials()
   }
 
@@ -194,16 +195,39 @@ export class LedgerSync {
     this.state.credentials = all.filter((c) => (c.type ?? 'webauthn') === 'webauthn')
     const hidCred = all.find((c) => c.type === 'hid')
     this.state.hid.enrolled = !!hidCred
-    this._armCheckpoints()
     this.detectHid(hidCred)
   }
 
   _armCheckpoints() {
     clearInterval(this.ckptTimer)
     this.ckptTimer = null
-    if (this.state.credentials.length && !this.state.finalized && this.state.webauthn) {
-      this.ckptTimer = setInterval(() => this.checkpoint('discouraged').catch(() => {}), CHECKPOINT_EVERY_MS)
+    if (!this.state.finalized) {
+      this.ckptTimer = setInterval(() => this.timestampHead().catch(() => {}), CHECKPOINT_EVERY_MS)
     }
+  }
+
+  /**
+   * Silent checkpoint: an RFC 3161 timestamp over the current head. No device key, no prompt — the
+   * TSA's clock alone carries the "this ledger state existed by T" argument. The device signature
+   * (Touch ID) happens once, at the seal.
+   */
+  async timestampHead() {
+    if (this.state.finalized || this.state.signing || !this.state.count) return null
+    await this.flush()
+    while (this.state.syncing) await new Promise((r) => setTimeout(r, 50))
+    if (this.queue.length || this.state.error) return null
+    const head = this.chain.head
+    if (this.state.checkpoints.some((c) => c.head === head)) return null // nothing new since the last one
+    const r = await this._fetch(`${this._sessionPath}/timestamp`, { method: 'POST', body: JSON.stringify({ head }) })
+    if (!r.ok) return null
+    const res = await r.json()
+    const ts = res.results[0]
+    this.state.checkpoints = [...this.state.checkpoints, {
+      head, at: res.at_event_count, ts: Date.now(), uv: false, device: false,
+      timestamp: ts?.ok ? ts.data.gen_time : null, tsa: ts?.ok ? ts.data.tsa : null, timestampError: null,
+    }]
+    this.state.levelPreview = res.level_if_sealed_now
+    return res
   }
 
   /** Create a device-bound key for this session's owner (Touch ID once). */
@@ -234,7 +258,7 @@ export class LedgerSync {
     if (h.enrolled && hidCred && hidCred.credential_id !== st.key_id) {
       h.error = 'a different witness key is enrolled for this account — re-enroll to use this helper'
     }
-    if (h.enrolled && !h.witnessing && !this.state.finalized) await this.startWitness()
+    if (st.permission === 'granted' && !h.witnessing && !this.state.finalized) await this.startWitness()
   }
 
   /** Register the helper's Secure Enclave key under this session's owner (no Touch ID: silent key). */
@@ -253,7 +277,8 @@ export class LedgerSync {
       })
       if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.detail?.detail || b.detail || `enroll-hid ${r.status}`) }
       h.enrolled = true
-      await this.startWitness()
+      if (h.witnessing) await this.relayHid()
+      else await this.startWitness()
     } catch (e) {
       h.error = e.message
       throw e
@@ -265,11 +290,11 @@ export class LedgerSync {
   /** Anchor a witness segment at a head the server already holds, then relay windows as they close. */
   async startWitness() {
     const h = this.state.hid
-    if (!h.available || !h.enrolled || h.witnessing || this.state.finalized) return
+    if (!h.available || h.witnessing || this.state.finalized) return
     try {
       await this.flush()
       while (this.state.syncing) await new Promise((r) => setTimeout(r, 50))
-      const res = await hid.start(this.state.sessionId, this.chain.head)
+      const res = await hid.start(this.state.sessionId, this.chain.head)  // counting starts now, enrolled or not
       Object.assign(h, { witnessing: true, seg: res.seg, error: null })
       this.hidSince = -1
       clearInterval(this.hidTimer)
@@ -279,10 +304,10 @@ export class LedgerSync {
     }
   }
 
-  /** Forward closed windows the helper has produced since the last relay. */
+  /** Forward closed windows the helper has produced since the last relay (needs an enrolled key). */
   async relayHid() {
     const h = this.state.hid
-    if (!h.witnessing) return
+    if (!h.witnessing || !h.enrolled) return
     const res = await hid.statements(this.state.sessionId, this.hidSince)
     const sts = res.statements || []
     if (!sts.length) return
@@ -321,8 +346,9 @@ export class LedgerSync {
 
   /**
    * Sign the current chain head with the enrolled key. Flushes first so the head the device
-   * signs is one the server has. `uv` 'discouraged' = silent when the platform allows it;
-   * 'required' = Touch ID / PIN (used for the seal).
+   * signs is one the server has. On macOS the platform authenticator prompts Touch ID regardless
+   * of `uv`, so this is used for the seal ('required') and the optional manual button — the
+   * periodic checkpoints use timestampHead() instead.
    */
   async checkpoint(uv = 'discouraged') {
     if (!this.state.credentials.length || this.state.finalized || this.state.signing) return null
@@ -338,7 +364,7 @@ export class LedgerSync {
       const wa = res.results.find((r) => r.kind === 'webauthn')
       const ts = res.results.find((r) => r.kind === 'timestamp')
       this.state.checkpoints = [...this.state.checkpoints, {
-        head, at: res.at_event_count, ts: Date.now(), uv: !!wa?.data?.uv,
+        head, at: res.at_event_count, ts: Date.now(), uv: !!wa?.data?.uv, device: true,
         timestamp: ts?.ok ? ts.data.gen_time : null, tsa: ts?.ok ? ts.data.tsa : null, timestampError: ts && !ts.ok ? ts.detail : null,
       }]
       this.state.levelPreview = res.level_if_sealed_now

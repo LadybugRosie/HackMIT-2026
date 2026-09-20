@@ -59,7 +59,7 @@ const status = computed(() => {
         <p class="hint muted">This browser has no WebAuthn support, so the certificate stays at L1 (ledger bound to text).</p>
       </template>
       <template v-else-if="!state.credentials.length">
-        <p class="hint muted">Enroll a key that lives in this Mac's Secure Enclave. The chain head is then signed silently every 3 minutes and with Touch ID at submit, so the certificate proves the ledger was on <em>this</em> device.</p>
+        <p class="hint muted">Enroll a key that lives in this Mac's Secure Enclave. At submit, one Touch ID signs the final chain head, so the certificate proves the ledger was on <em>this</em> device. Meanwhile the head is timestamped by an independent authority every 3 minutes — silently.</p>
         <div class="actions">
           <button class="primary" :disabled="state.enrolling || state.finalized" @click="emit('enroll')">{{ state.enrolling ? 'Waiting for Touch ID…' : 'Enroll this device' }}</button>
         </div>
@@ -67,17 +67,17 @@ const status = computed(() => {
       <template v-else>
         <dl>
           <dt>Key</dt><dd class="mono">{{ short(state.credentials[0].credential_id) }}<span v-if="state.credentials.length > 1" class="muted"> +{{ state.credentials.length - 1 }}</span></dd>
-          <dt>Checkpoints</dt><dd>{{ state.checkpoints.length }}<span class="muted"> this page load</span></dd>
+          <dt>Checkpoints</dt><dd>{{ state.checkpoints.length }}<span class="muted"> this page load · {{ state.checkpoints.filter((c) => c.device).length }} device-signed</span></dd>
         </dl>
         <ul v-if="state.checkpoints.length" class="ckpts">
           <li v-for="c in state.checkpoints.slice(-4)" :key="c.head" class="mono">
-            {{ clock(c.ts) }} · head {{ c.head.slice(0, 8) }} · {{ c.at }} events{{ c.uv ? ' · Touch ID' : '' }}
+            {{ clock(c.ts) }} · head {{ c.head.slice(0, 8) }} · {{ c.at }} events{{ c.device ? (c.uv ? ' · Touch ID' : ' · device') : '' }}
             <span v-if="c.timestamp" class="good"> · TSA {{ c.timestamp.replace('T', ' ').replace('Z', 'Z') }}</span>
             <span v-else-if="c.timestampError" class="warn" :title="c.timestampError"> · no TSA</span>
           </li>
         </ul>
         <div class="actions">
-          <button :disabled="state.signing || state.finalized || !state.count" @click="emit('checkpoint')">{{ state.signing ? 'Signing…' : 'Sign head now' }}</button>
+          <button :disabled="state.signing || state.finalized || !state.count" @click="emit('checkpoint')" title="Optional: a device-signed checkpoint mid-session (Touch ID)">{{ state.signing ? 'Signing…' : 'Sign head now (Touch ID)' }}</button>
         </div>
       </template>
       <p v-if="state.attestError" class="warn small">{{ state.attestError }}</p>
@@ -92,7 +92,7 @@ const status = computed(() => {
         <p class="hint muted">Helper found, but macOS has not granted it Input Monitoring. System Settings → Privacy &amp; Security → Input Monitoring → enable <em>attest-hid</em>, then relaunch it.</p>
       </template>
       <template v-else-if="!hid.enrolled">
-        <p class="hint muted">Helper running ({{ hid.backend === 'secure_enclave' ? 'Secure Enclave key' : 'software key' }}). Enroll its key under your account so its statements count for your sessions.</p>
+        <p class="hint muted">Helper running ({{ hid.backend === 'secure_enclave' ? 'Secure Enclave key' : 'software key' }}){{ hid.witnessing ? ' and already counting for this session' : '' }}. Enroll its key under your account so its statements count.</p>
         <div class="actions">
           <button class="primary" :disabled="hid.enrolling || state.finalized" @click="emit('enroll-hid')">{{ hid.enrolling ? 'Enrolling…' : 'Enroll witness' }}</button>
         </div>
@@ -102,8 +102,9 @@ const status = computed(() => {
           <dt>Helper</dt><dd class="mono">{{ short(hid.cdhash) }} <span class="muted">· {{ hid.backend === 'secure_enclave' ? 'Enclave key' : 'software key' }}</span></dd>
           <dt>Windows</dt><dd>{{ hid.windows }} <span class="muted">relayed</span></dd>
           <dt v-if="hid.summary">Key-downs</dt>
-          <dd v-if="hid.summary" :class="hid.summary.hw_kd >= hid.summary.ledger_kd ? 'good' : 'bad'">
-            editor {{ hid.summary.ledger_kd }} · keyboard {{ hid.summary.hw_kd }} {{ hid.summary.hw_kd >= hid.summary.ledger_kd ? '✓' : '✗' }}
+          <dd v-if="hid.summary" :class="hid.summary.hw_kd >= hid.summary.ledger_kd - hid.summary.pending_kd ? 'good' : 'bad'">
+            editor {{ hid.summary.ledger_kd - hid.summary.pending_kd }} · keyboard {{ hid.summary.hw_kd }} {{ hid.summary.hw_kd >= hid.summary.ledger_kd - hid.summary.pending_kd ? '✓' : '✗' }}
+            <span v-if="hid.summary.pending_kd" class="muted"> · {{ hid.summary.pending_kd }} in the open window</span>
           </dd>
           <dt v-if="hid.summary?.devices?.length">Devices</dt>
           <dd v-if="hid.summary?.devices?.length" class="mono">

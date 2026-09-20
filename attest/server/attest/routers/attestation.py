@@ -19,6 +19,7 @@ import time
 from typing import Any, Dict, Tuple
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from ..attestors.hid import statement_hash, verify_statement_signature
 from ..attestors.policy import assess_attestations
@@ -155,6 +156,41 @@ def attest(session_id: str, payload: AttestRequest, request: Request) -> AttestR
                           results=[AttestationResultView(**r.__dict__) for r in results],
                           attestation_count=len(rec.attestations), level_if_sealed_now=level)
 
+
+
+class TimestampRequest(BaseModel):
+    head: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+@router.post("/{session_id}/timestamp", response_model=AttestResponse)
+def timestamp_head(session_id: str, payload: TimestampRequest, request: Request) -> AttestResponse:
+    """A silent checkpoint: get an RFC 3161 token for a head this ledger passed through. Carries the
+    elapsed-time argument without touching the device key, so it can run every few minutes with
+    nobody at the keyboard; the device signature happens once, at the seal."""
+    store = request.app.state.store
+    rec = _session(request, session_id)
+    cfg = _cfg(request)
+    if rec.certificate is not None:
+        raise HTTPException(409, {"code": "finalized", "detail": "session already finalized"})
+    if not cfg.TSA_URL:
+        raise HTTPException(503, {"code": "no_tsa", "detail": "trusted timestamps are disabled"})
+    at_count = 0 if payload.head == rec.genesis else next((n + 1 for n, ev in enumerate(rec.events) if ev["hash"] == payload.head), None)
+    if at_count is None:
+        raise HTTPException(409, {"code": "unknown_head", "detail": "head is not a state of this ledger", "chain_head": rec.head})
+    try:
+        ts_record = request_attestation(cfg.TSA_URL, payload.head, cfg.TSA_TIMEOUT_S)
+    except Exception as exc:
+        raise HTTPException(502, {"code": "tsa_unavailable", "detail": f"timestamp unavailable: {exc.__class__.__name__}"})
+    ts_record.update(at_event_count=at_count, ts=int(time.time() * 1000))
+    res = request.app.state.attestors["timestamp"].verify(bytes.fromhex(payload.head), ts_record)
+    if not res.ok:
+        raise HTTPException(502, {"code": "tsa_unverified", "detail": res.detail})
+    store.add_attestation(session_id, ts_record)
+    rec = store.get(session_id)
+    level, _r, _s = assess_attestations(rec.attestations, request.app.state.attestors, rec.head, {rec.genesis, *(e["hash"] for e in rec.events)},
+                                        events=rec.events, trusted_cdhashes=cfg.HID_TRUSTED_CDHASHES)
+    return AttestResponse(session_id=session_id, head=payload.head, at_event_count=at_count, results=[AttestationResultView(**res.__dict__)],
+                          attestation_count=len(rec.attestations), level_if_sealed_now=level)
 
 
 # -- Stage 4 (L3): hardware witness ---------------------------------------------------------

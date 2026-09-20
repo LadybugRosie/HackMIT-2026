@@ -120,6 +120,7 @@ class HidSummary:
     hw_kd: int = 0
     injection_windows: List[Dict[str, Any]] = field(default_factory=list)
     shortfall_windows: int = 0
+    pending_kd: int = 0           # keystrokes after the last closed window while the witness is still open
     devices: List[Dict[str, Any]] = field(default_factory=list)
     helper_trusted: Optional[bool] = None
     helper_cdhash: str = ""
@@ -253,24 +254,32 @@ def assess_hid(batches: Sequence[Mapping[str, Any]], batch_results: Sequence[Att
         s.supports_l3 = s.ok
         return s
 
-    # -- coverage: every ledger keystroke falls in some window
+    # -- coverage: every ledger keystroke falls in some window. While the witness is still running
+    #    (no terminal statement yet) keystrokes newer than the last closed window are *pending*, not
+    #    uncovered — the window that will cover them has not closed. At seal nothing is pending.
     ts_list, s.correlation_basis = ledger_keystroke_ts(events)
     s.ledger_kd = len(ts_list)
     windows = [(int(st["t0"]) - SKEW_MS, int(st["t1"]) + SKEW_MS) for st in sts]
     windows.sort()
+    open_edge = None if last.get("final") else int(last["t1"]) - SKEW_MS
     covered = 0
     wi = 0
     for t in ts_list:
+        if open_edge is not None and t >= open_edge:
+            s.pending_kd += 1
+            continue
         while wi < len(windows) and windows[wi][1] <= t:
             wi += 1
         if wi < len(windows) and windows[wi][0] <= t < windows[wi][1]:
             covered += 1
-    s.coverage_ratio = round(covered / s.ledger_kd, 4) if s.ledger_kd else 1.0
-    cov_ok = covered == s.ledger_kd
-    s.checks.append(("hid_coverage", cov_ok, f"{covered}/{s.ledger_kd} ledger keystrokes fall inside witnessed windows"
-                     + (f" ({s.ledger_kd - covered} unwitnessed)" if not cov_ok else "")))
+    settled = s.ledger_kd - s.pending_kd
+    s.coverage_ratio = round(covered / settled, 4) if settled else 1.0
+    cov_ok = covered == settled
+    s.checks.append(("hid_coverage", cov_ok, f"{covered}/{settled} ledger keystrokes fall inside witnessed windows"
+                     + (f" ({settled - covered} unwitnessed)" if not cov_ok else "")
+                     + (f", {s.pending_kd} pending in the open window" if s.pending_kd else "")))
     if not cov_ok:
-        s.reasons.append(f"coverage {s.coverage_ratio:.2%} — {s.ledger_kd - covered} keystrokes outside witnessed windows")
+        s.reasons.append(f"coverage {s.coverage_ratio:.2%} — {settled - covered} keystrokes outside witnessed windows")
 
     # -- correlation per window: hardware may see more, never (much) fewer
     s.correlation_checked = True
